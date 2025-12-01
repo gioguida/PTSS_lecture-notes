@@ -1,0 +1,891 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+\usepackage{parskip} % Adds space between paragraphs instead of indenting
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+\usepackage{textcomp} % For \textunderscore
+\let\underscore\_
+\def\_{%
+  \ifmmode\underscore
+  \else\textunderscore\penalty0\relax
+  \fi
+}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ A Detailed Textbook \\ \large Week 2: The Build Process and \texttt{make}}
+\author{Based on lecture slides}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Programming Techniques for Scientific Simulations},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction: The Compiler}
+
+Welcome to our in-depth discussion on the C++ build process. Before we can write complex scientific simulations, we must first understand the fundamental tool that turns our human-readable ideas into a language the machine can execute: the \textbf{compiler}.
+
+A compiler is a sophisticated software program that acts as a master translator. Its job is to take \textbf{source code}—the instructions you write in a high-level programming language like C++—and translate it into \textbf{machine code}, the low-level binary instructions that a computer's processor understands.
+
+Think of it this way: you write a detailed recipe in English (C++), but the chef (the CPU) only speaks a specific binary dialect. The compiler is the translator who converts your English recipe into a precise, unambiguous set of instructions in the chef's native language.
+
+In this course, we will primarily focus on two of the most powerful and widely-used C++ compilers:
+\begin{itemize}
+    \item \textbf{GNU Compiler Collection (GCC):} We will use its C++ compiler, \texttt{g++}.
+    \item \textbf{Clang:} A newer compiler, often used with the LLVM backend.
+\end{itemize}
+There are many others, but these are the industry standards on Linux and macOS. These tools are incredibly complex, and a good way to start learning about them is to read their manuals. On a Unix-like system, you can type the following into your terminal:
+
+\begin{verbatim}
+$ man c++
+\end{verbatim}
+
+This command will display the "manual page" for the C++ compiler, revealing a vast number of options and features.
+
+\section{The Four-Stage Assembly Line of Compilation}
+
+When you compile a simple program by typing a single command, it feels like an instantaneous, single-step process:
+
+\begin{verbatim}
+$ c++ hello.cpp
+\end{verbatim}
+
+Behind the scenes, the compiler is executing a complex, four-stage "assembly line" to produce your final program. This entire process can be visualized as a flow:
+
+\texttt{hello.cpp} $\rightarrow$ \textbf{Preprocessor} $\rightarrow$ \texttt{hello.ii} $\rightarrow$ \textbf{Compiler} $\rightarrow$ \texttt{hello.s} $\rightarrow$ \textbf{Assembler} $\rightarrow$ \texttt{hello.o} $\rightarrow$ \textbf{Linker} $\rightarrow$ \texttt{a.out}
+
+At the final stage, the Linker also pulls in any necessary \textbf{libraries}, which are pre-compiled bundles of code (like \texttt{libm.a} for math functions or \texttt{libgcc.a} for fundamental compiler support).
+
+Let's break down these four distinct stages. You can observe them yourself by telling the compiler to be "verbose" and to "save temporary files" with these flags:
+
+\begin{verbatim}
+$ c++ --verbose -save-temps hello.cpp
+\end{verbatim}
+
+This command will run the full process but will leave behind the intermediate files (\texttt{hello.ii} and \texttt{hello.s}) and the object file (\texttt{hello.o}), allowing you to inspect the output of each stage.
+
+\subsection{Stage 1: The Preprocessor}
+
+The first tool in the chain is the \textbf{preprocessor}. It is a relatively simple text-processing tool that manipulates your source code \textit{before} the actual compiler sees it. It doesn't understand C++ syntax; it only obeys special commands called \textbf{preprocessor directives}, which are lines that begin with a hash symbol (\#).
+
+\textbf{Real-world Analogy:} Imagine the compiler is a master legal translator. Before the translator gets a document, an administrative assistant (the preprocessor) goes through it. The assistant follows simple instructions on sticky notes (\texttt{\#} directives), like "Find every instance of 'XXX' and replace it with 'Hello'" (\texttt{\#define}) or "Staple this other document here" (\texttt{\#include}).
+
+Let's look at the most common directives.
+
+\subsubsection{\texttt{\#define} and \texttt{\#undef}}
+
+The \texttt{\#define} directive is used to create \textbf{macros}. In its simplest form, it's a direct text search-and-replace. By convention, macro names are written in \texttt{UPPERCASE} to distinguish them from regular variables.
+
+\begin{lstlisting}
+// This is your C++ code (pre1.cpp)
+#define XXX "Hello"
+std::cout << XXX;
+\end{lstlisting}
+After the preprocessor runs, the code given to the compiler is:
+\begin{lstlisting}
+// This is what the compiler sees
+std::cout << "Hello";
+\end{lstlisting}
+
+Macros can also take arguments, making them look like functions:
+\begin{lstlisting}
+// This is your C++ code (pre2.cpp)
+#define SUM(A,B) A+B
+std::cout << SUM(3,4);
+\end{lstlisting}
+This is transformed by the preprocessor into:
+\begin{lstlisting}
+// This is what the compiler sees
+std::cout << 3+4;
+\end{lstlisting}
+
+\textbf{Warning - A Common Pitfall:} This direct text substitution is blind and can be dangerous. Consider this code:
+\texttt{int x = SUM(2, 3) * 5;}
+The preprocessor will turn this into:
+\texttt{int x = 2+3 * 5;}
+Due to operator precedence (multiplication before addition), \texttt{x} will be 17, not 25! A safer (though still not perfect) macro would be:
+\texttt{\#define SUM(A,B) ((A)+(B))}
+
+You can also define macros from the command line using the \texttt{-D} flag. This is extremely useful for turning features on or off.
+\begin{verbatim}
+$ c++ -DXXX=3 -DYYY
+\end{verbatim}
+This is exactly equivalent to adding this to the top of your source file:
+\begin{lstlisting}
+#define XXX 3
+#define YYY
+\end{lstlisting}
+
+The counterpart to defining is \texttt{\#undef}, which undefines a macro.
+\begin{lstlisting}
+#define XXX 4
+int x = XXX; // Becomes: int x = 4;
+#undef XXX
+int y = XXX; // ERROR: 'XXX' is not defined
+\end{lstlisting}
+You can also undefine from the command line with the \texttt{-U} flag.
+
+\subsubsection{\texttt{\#ifdef}, \texttt{\#if}, and Conditional Compilation}
+The preprocessor can be used to \textbf{conditionally compile} code. This means you can include or exclude blocks of code from the final program based on whether a macro is defined.
+
+The simplest form is \texttt{\#ifdef} (if defined):
+\begin{lstlisting}
+// This is your C++ code (pre3.cpp)
+#ifdef DEBUG
+    std::cout << "Debug: x = " << x << std::endl;
+#else
+    // Do nothing in release mode
+#endif
+\end{lstlisting}
+
+\textbf{Real-world Analogy:} This is like a "confidential" stamp. The preprocessor assistant is told, "If you see the 'DEBUG' stamp on the folder (\texttt{-DDEBUG}), then include this extra debug paragraph. Otherwise, just skip it."
+
+You can see this in action by running the preprocessor (with the \texttt{-E} flag to stop after this stage) in two different ways:
+\begin{verbatim}
+# 1. Normal mode: The #ifdef block is false
+$ c++ -E pre3.cpp
+
+# 2. Debug mode: The #ifdef block is true
+$ c++ -E -DDEBUG pre3.cpp
+\end{verbatim}
+In the second case, the debug-printing code will be present in the \texttt{.ii} file. In the first, it will be gone, as if it never existed.
+
+For more complex logic, you can use \texttt{\#if}, \texttt{\#elif} (else if), and logical operators. This is often used to handle differences between compilers or operating systems:
+\begin{lstlisting}
+#if !defined(_GNUC_)
+    std::cout << "A non-GNU compiler";
+#elif __GNUC__ <= 2 && __GNUC_MINOR__ < 95
+    std::cout << "gcc before 2.95";
+#elif __GNUC__ == 2
+    std::cout << "gcc after 2.95";
+#elif __GNUC__ >= 3
+    std::cout << "gcc version 3 or higher";
+#endif
+\end{lstlisting}
+
+\subsubsection{\texttt{\#error}}
+This directive tells the preprocessor to stop compilation and print an error message. This is a powerful way to enforce requirements.
+\begin{lstlisting}
+#if !defined(__GNUC__)
+    #error This program requires the GNU compilers
+#endif
+\end{lstlisting}
+If you try to compile this code with a non-GNU compiler, the build will fail immediately with your custom message.
+
+\subsubsection{\texttt{\#include}}
+This is the most common directive. It tells the preprocessor to find the specified file and literally paste its entire contents into the current file at that exact location.
+
+There are two forms, which tell the preprocessor \textit{where} to look:
+\begin{itemize}
+    \item \texttt{\#include <iostream>}: The \textbf{angle brackets} \texttt{< >} tell the preprocessor to search for the file in the standard ``system'' include directories.
+    \item \texttt{\#include "myfile.h"}: The \textbf{double quotes} \texttt{" "} tell the preprocessor to search for the file \textit{first} in the current directory (the same directory as the file containing the \texttt{\#include}), and if it's not found there, to \textit{then} search in the system directories.
+\end{itemize}
+If you organize your own header files into a subdirectory (e.g., an \texttt{include/} folder), you must tell the compiler to add that folder to its search path using the \texttt{-I} flag:
+\begin{verbatim}
+$ c++ -E -Iinclude my_program.cpp
+\end{verbatim}
+This command adds the \texttt{include} directory to the list of places to search for headers.
+
+\subsubsection{Inspecting Preprocessor Output}
+To see the result of all this text substitution, you can run \textit{only} the preprocessor step by using the \texttt{-E} flag:
+\begin{verbatim}
+$ c++ -E hello.cpp
+\end{verbatim}
+The output will be the full, "expanded" C++ code that will be passed to the compiler. It's often thousands of lines long, as all the system headers (like \texttt{<iostream>}) are expanded.
+
+\subsection{Stage 2: The Compiler (Source to Assembly)}
+After the preprocessor generates the intermediate \texttt{.ii} file (which is just a massive C++ source file), it's passed to the \textit{real} \textbf{compiler}. This stage is the heart of the translation. It parses the C++ syntax, checks for errors, and translates the high-level C++ code into low-level, but still human-readable, \textbf{assembly code} (a \texttt{.s} file).
+
+You can stop the process after this stage using the \texttt{-S} flag:
+\begin{verbatim}
+$ c++ -S -O0 functioncall.cpp
+\end{verbatim}
+This creates \texttt{functioncall.s}. The \texttt{-O0} flag is important: it means "no optimization." The resulting assembly code will be a very literal, step-by-step translation of your C++ code.
+
+Now, try this:
+\begin{verbatim}
+$ c++ -S -O3 functioncall.cpp
+\end{verbatim}
+The \texttt{-O3} flag tells the compiler to use its highest level of optimization. If you compare the two \texttt{.s} files, the \texttt{-O3} version will look radically different. The compiler will have rearranged, simplified, and perhaps even deleted parts of your code to make it run as fast as possible.
+
+One common optimization is \textbf{inlining}. If you have a small function, the compiler might decide that it's faster to just copy-paste the function's assembly code directly into the spot where it's called, rather than performing the "overhead" of a formal function call (jumping to a new part of memory and back).
+
+Assembly code can be hard to read, especially C++ "mangled" symbols (which look like \texttt{\_Z4sqrtd}). You can use a tool like \texttt{c++filt} to "demangle" them, or use the fantastic online "Compiler Explorer" at \url{https://godbolt.org/} to see this translation in real-time.
+
+\subsection{Stage 3: The Assembler (Assembly to Machine Code)}
+The \textbf{assembler} performs the final, mechanical translation. It takes the human-readable assembly file (\texttt{.s}) and converts it into a \textbf{relocatable object file} (\texttt{.o}). This file contains pure machine code—the binary 1s and 0s that the processor directly executes.
+
+This \texttt{.o} file is a \textit{binary file}, not a text (ASCII) file. If you try to open it in a text editor, you will see gibberish.
+
+It is called ``relocatable'' because it's not a complete program. It's a single, compiled \textit{component}. It may contain references to functions or variables defined in other files (like \texttt{std::cout} or a \texttt{square} function you wrote). It doesn't know the final memory addresses for these things. It just has ``placeholders'' or ``IOUs'' that the linker will resolve later.
+
+\subsection{Stage 4: The Linker (Objects to Executable)}
+The \textbf{linker} is the final stage of the assembly line. Its job is to be the master project manager. It takes all the object files (\texttt{.o}) you've compiled, plus any \textbf{libraries} (like \texttt{libm.a} for math functions) that you've requested, and links them all together into one.
+
+\textbf{Real-world Analogy:} If the compiler/assembler builds the individual "chapters" (\texttt{.o} files) of a book, the linker is the "bookbinder." It gathers all the chapters, finds the "Table of Contents" and "Index" (libraries), and then resolves all the cross-references. For example, when Chapter 1 (\texttt{main.o}) says "see function in Chapter 5 (\texttt{square.o})", the linker finds the exact page (memory address) of that function and "links" the two, creating the final, complete, and executable book (\texttt{a.out}).
+
+The final output is a single, \textbf{executable object file}. On Linux/macOS, this is named \texttt{a.out} by default; on Windows, it would be an \texttt{.exe} file. This is the program you can actually run.
+
+\subsection{Problem 2.1: Static \& Dynamic Arrays}
+Here is a practical exercise to apply these concepts.
+
+\textbf{Task:} Write a program which first reads in the number of values, $n$. Then, read in $n$ values from standard input.
+\begin{enumerate}
+    \item Normalize the loaded sequence so that the sum of all values is 1.
+    \item Print out the normalized sequence in \textit{reverse order}.
+\end{enumerate}
+
+\textbf{Implement this in two ways:}
+\begin{enumerate}
+    \item Set a maximum number of input values, \texttt{max}, and allocate a \textbf{static array} of length \texttt{max}.
+    \item Do the same using \textbf{dynamic arrays} so that the input size is no longer limited. A good option to achieve this is to use \texttt{std::vector}.
+\end{enumerate}
+
+\textbf{Experimentation:}
+Try compiling your program with different compiler options, such as \texttt{-Wall}, \texttt{-Wextra}, \texttt{-std=c++XX} (e.g., \texttt{-std=c++17}), and \texttt{-pedantic}. Check the compiler's manual (\texttt{man c++}) to see what these flags do.
+
+\textbf{Hint:} If you use \texttt{std::cin} to read, you can "pipe" input to your program from a file or another command. If your program is named \texttt{main}, you can test it with a file \texttt{input.txt} (containing "3 1 2 3") like this:
+\begin{verbatim}
+$ ./main < input.txt
+\end{verbatim}
+Or you can generate the input on-the-fly:
+\begin{verbatim}
+# Uses a pipe
+$ echo "3 1 2 3" | ./main
+
+# Uses process substitution
+$ ./main <<< "3 1 2 3"
+\end{verbatim}
+
+\section{Modular Programming: Segmenting Code}
+As programs grow, putting all your code into one giant file (e.g., \texttt{main\_original.cpp}) becomes completely unmanageable. Any small change requires recompiling the entire massive file, and it's impossible to find anything.
+
+The solution is \textbf{code refactoring}—the process of restructuring existing source code without changing its external behavior. We will segment our program by splitting the code into several files.
+
+\begin{itemize}
+    \item \texttt{main\_original.cpp} (The "Before" state)
+\end{itemize}
+\begin{lstlisting}
+#include <iostream>
+double square(double x) {
+    return x*x;
+}
+int main() {
+    std::cout << square(5.) << std::endl;
+    return 0;
+}
+\end{lstlisting}
+
+We will refactor this into three separate files. This requires understanding one of the most important concepts in C++: the difference between a \textbf{declaration} and a \textbf{definition}.
+
+\subsection{Declarations vs. Definitions}
+\begin{itemize}
+    \item \textbf{Definition:} This is the actual implementation of the function---the code in curly braces (\texttt{\{...\}}) that does the work. A function can only be \textbf{defined once} in an entire program. (This is the ``One Definition Rule,'' or ODR).
+    
+    \item \textbf{Declaration (or Prototype):} This is just the function's ``signature'' or ``contract.'' It tells the compiler what the function is named, what it returns, and what arguments it takes, but it has no body (it ends with a semicolon). A function can be \textbf{declared many times}.
+\end{itemize}
+
+\textbf{Real-world Analogy:} A \textbf{declaration} is a ``menu item'' at a restaurant. It tells you the name of the dish, what's in it, and what it costs. You can have many menus (many declarations). The \textbf{definition} is the ``recipe in the kitchen'' that actually explains \textit{how} to make the dish. There can only be one official recipe (one definition).
+
+Before you can ``order'' (call) a function, the compiler must have at least seen its ``menu item'' (declaration).
+
+\subsection{Using Header Files}
+The easiest way to manage declarations and share them between files is to use \textbf{header files} (conventionally ending in \texttt{.h} or \texttt{.hpp}).
+
+Here is our refactored program:
+
+\textbf{File: \texttt{square.hpp}} (The Header File / The "Contract")
+\begin{lstlisting}
+// This is the DECLARATION
+double square(double);
+\end{lstlisting}
+
+\textbf{File: \texttt{square.cpp}} (The Implementation / The "Kitchen")
+\begin{lstlisting}
+#include "square.hpp" // Good practice to include its own header
+
+// This is the DEFINITION
+double square(double x) {
+    return x*x;
+}
+\end{lstlisting}
+
+\textbf{File: \texttt{main.cpp}} (The Client / The "Customer")
+\begin{lstlisting}
+#include <iostream>
+#include "square.hpp" // Includes the DECLARATION
+
+int main() {
+    // This call is legal because we included square.hpp
+    std::cout << square(5.) << std::endl;
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{Compiling and Linking Separately}
+Now that our code is split, we can build it in pieces. We use the \texttt{-c} flag, which tells the compiler: "Compile this file, but do not link it. Just create the \texttt{.o} object file."
+
+\begin{enumerate}
+    \item \textbf{Compile \texttt{square.cpp}:}
+    \begin{verbatim}
+$ c++ -c square.cpp
+    \end{verbatim}
+    This command reads \texttt{square.cpp}, finds the definition for \texttt{square}, and creates \texttt{square.o}.
+
+    \item \textbf{Compile \texttt{main.cpp}:}
+    \begin{verbatim}
+$ c++ -c main.cpp
+    \end{verbatim}
+    This command reads \texttt{main.cpp}. It sees the \textit{declaration} of \texttt{square} (from \texttt{square.hpp}) and the \textit{call} to \texttt{square}. It trusts that the definition will be provided later and creates \texttt{main.o}.
+
+    \item \textbf{Link the object files:}
+    \begin{verbatim}
+$ c++ main.o square.o
+    \end{verbatim}
+    This is the final "bookbinding" step. The linker takes \texttt{main.o} and \texttt{square.o}. It sees that \texttt{main.o} needs the \textit{definition} of \texttt{square} and finds it in \texttt{square.o}. It "links" them together into the final executable, \texttt{a.out}.
+
+    \item \textbf{(Better) Link and name the output:}
+    \begin{verbatim}
+$ c++ main.o square.o -o square
+    \end{verbatim}
+    The \texttt{-o} flag specifies the \textbf{output} file name, creating an executable named \texttt{square}.
+\end{enumerate}
+
+\subsection{Include Guards: Preventing Duplication}
+There's a critical problem with \texttt{\#include}. What if a file accidentally includes the same header twice?
+
+Consider this "diamond of death" scenario:
+\begin{itemize}
+    \item \texttt{grandfather.h}: contains \texttt{struct foo \{ ... \};}
+    \item \texttt{father.h}: contains \texttt{\#include "grandfather.h"}
+    \item \texttt{child.cpp}: contains \texttt{\#include "grandfather.h"} and \texttt{\#include "father.h"}
+\end{itemize}
+
+When the preprocessor runs on \texttt{child.cpp}, it will first include \texttt{grandfather.h}. Then, it will include \texttt{father.h}, which \textit{also} includes \texttt{grandfather.h}. The result is that the compiler sees the definition of \texttt{struct foo} twice, which is a ``redeclaration error,'' and the build fails.
+
+The solution is an \textbf{include guard}. This is a standard preprocessor trick:
+
+\textbf{File: \texttt{grandfather.h}}
+\begin{lstlisting}
+// 1. If GRANDFATHER_H is NOT defined:
+#ifndef GRANDFATHER_H
+// 2. Then define it:
+#define GRANDFATHER_H
+
+// 3. ...and process the entire file...
+struct foo {
+    int member;
+};
+
+// 4. End the conditional block
+#endif /* GRANDFATHER_H */
+\end{lstlisting}
+
+\textbf{How it works:} The first time the file is included, \texttt{GRANDFATHER\_H} is not defined. The preprocessor enters the block, defines \texttt{GRANDFATHER\_H}, and processes the file. The \textit{second} time it's included (in the same compilation), \texttt{GRANDFATHER\_H} \textit{is} defined, so the preprocessor skips the entire block from \texttt{\#ifndef} to \texttt{\#endif}.
+
+A non-standard, but very common, alternative is \texttt{\#pragma once}, which you can place at the top of the header file. It's simpler but may not be supported by all compilers.
+\begin{lstlisting}
+#pragma once
+
+struct foo {
+    int member;
+};
+\end{lstlisting}
+
+\subsection{Assertions: \texttt{<cassert>}}
+The \texttt{<cassert>} header provides the \texttt{assert} macro, a powerful tool for sanity-checking your code. An \textbf{assertion} is a statement of a condition that you, the programmer, "assert" must be true at that point in the code.
+
+\begin{lstlisting}
+#include <cassert> // Note: <cassert>, not <assert.h> in C++
+
+double my_sqrt(double x) {
+    // We assert this precondition must be true
+    assert(x >= 0);
+    // ... code to calculate square root ...
+}
+\end{lstlisting}
+
+If the expression inside \texttt{assert()} evaluates to \texttt{false} at runtime, the program will immediately \textbf{abort} and print an error message stating which assertion failed, in which file, and on which line. This helps you find bugs instantly, rather than letting your program continue with "bad" data.
+
+Assertions are safety checks for development. For a final, high-performance "production" build, you might want to turn them all off. The \texttt{<cassert>} header is designed for this. It internally looks something like this:
+\begin{lstlisting}
+#ifdef NDEBUG
+    #define assert(e) ((void)0) // Replaced with... nothing!
+#else
+    #define assert(e) /* ... complex implementation ... */
+#endif
+\end{lstlisting}
+
+This means you can compile your code in two modes:
+\begin{verbatim}
+# 1. Debug mode: Assertions are ON
+$ c++ assert.cpp
+
+# 2. Release mode: Assertions are OFF
+$ c++ -DNDEBUG assert.cpp
+\end{verbatim}
+The \texttt{-DNDEBUG} flag (which stands for "No Debug") causes all \texttt{assert} statements to be preprocessed into nothing, incurring zero performance cost.
+
+\section{Libraries: Reusable Code Collections}
+A \textbf{library} is a collection of useful, pre-compiled functions (and data). Instead of us all writing our own \texttt{printf} or \texttt{sin} (sine) functions, we use them from standard libraries. Libraries come in two main "flavors".
+
+\subsection{Static vs. Shared Libraries}
+
+\begin{itemize}
+    \item \textbf{Static Libraries (\texttt{.a} or \texttt{.lib}):}
+    
+    These are also known as ``archives'' (the \texttt{.a} extension).
+    
+    \textbf{Analogy:} A static library is like a ``toolbox.'' When you build your program (the ``project''), the linker (the ``builder'') goes to the toolbox, takes \textit{copies} of only the tools (functions) you need, and puts them directly into your project box (the executable).
+    
+    \textbf{Result:} Your final executable is larger, but it's completely \textbf{self-contained}. It doesn't need the library ``toolbox'' to exist on the user's computer.
+
+    \item \textbf{Shared Libraries (\texttt{.so} or \texttt{.dll}):}
+    
+    These are ``shared objects'' (\texttt{.so}) or ``dynamic-link libraries'' (\texttt{.dll} on Windows).
+    
+    \textbf{Analogy:} A shared library is like a ``central, public tool-shed'' that everyone in the city uses. When you build your program, the linker does not copy the tools. Instead, it puts a \textit{note} in your project box that says, ``When you need a hammer, go to the tool-shed at 123 Main St. and use theirs.''
+    
+    \textbf{Result:} Your executable is much smaller. However, it \textbf{depends} on that shared library file existing on the user's system when it runs. The benefit is that many programs can all ``share'' that one library in memory, saving resources.
+\end{itemize}
+
+\subsection{Creating Your Own Libraries}
+Let's turn our \texttt{square} function into a library.
+
+\subsubsection{Making a Static Library (\texttt{libsquare.a})}
+\begin{enumerate}
+    \item \textbf{Compile to an object file:}
+    \begin{verbatim}
+$ c++ -c square.cpp
+    \end{verbatim}
+    This gives us \texttt{square.o}.
+
+    \item \textbf{Archive the object file(s):}
+    \begin{verbatim}
+$ ar -crs libsquare.a square.o
+    \end{verbatim}
+    The \texttt{ar} (archiver) tool packs \texttt{square.o} into the library file. The flags \texttt{-crs} mean "create" the archive, "run" quickly, and "save" the index.
+\end{enumerate}
+By convention, static libraries are named \texttt{libsomething.a}. We'll see why in a moment.
+
+\subsubsection{Making a Shared Library (\texttt{libsquare.so})}
+\begin{enumerate}
+    \item \textbf{Compile to a Position Independent Code (PIC) object file:}
+    \begin{verbatim}
+$ c++ -fPIC -c square.cpp
+    \end{verbatim}
+    The \texttt{-fPIC} flag is crucial. It generates "position-independent code," which means the code can be loaded into \textit{any} memory address, which is essential for a shared library (since the operating system decides where to load it at runtime).
+
+    \item \textbf{Link into a shared object:}
+    \begin{verbatim}
+$ c++ -shared -fPIC -o libsquare.so square.o
+    \end{verbatim}
+    The \texttt{-shared} flag tells the compiler to create a shared library instead of an executable.
+\end{enumerate}
+By convention, shared libraries are named \texttt{libsomething.so}.
+
+\subsection{Using Your Libraries}
+Now, let's use our new library to build \texttt{main.cpp}. Assume we've put \texttt{square.hpp} in a folder named \texttt{include/} and our library \texttt{libsquare.a} (or \texttt{.so}) in a folder named \texttt{lib/}.
+
+\begin{enumerate}
+    \item \textbf{Compile \texttt{main.cpp}:}
+    \begin{verbatim}
+$ c++ -c -Iinclude main.cpp
+    \end{verbatim}
+    This creates \texttt{main.o}. The \texttt{-Iinclude} flag tells the compiler to "look in the \texttt{include} directory for headers" (so it can find \texttt{square.hpp}).
+
+    \item \textbf{Link \texttt{main.o} against our library:}
+    \begin{verbatim}
+$ c++ -o square main.o -Llib -lsquare
+    \end{verbatim}
+    This is the key step. We use two new flags to tell the linker:
+    \begin{itemize}
+        \item \texttt{-Llib}: "Look in the \texttt{lib} directory for libraries."
+        \item \texttt{-lsquare}: "Find and link the library named \texttt{square}." The linker automatically adds the \texttt{lib} prefix and \texttt{.a} or \texttt{.so} suffix, searching for \texttt{libsquare.a} or \texttt{libsquare.so}.
+    \end{itemize}
+\end{enumerate}
+\textbf{Note:} The order of libraries matters! If library \texttt{libA} uses functions from \texttt{libB}, you must link them in the order: \texttt{-lA -lB}.
+
+\subsection{Documenting Your Library}
+When you create a library, you are creating a "contract" with its users. Good documentation is essential and should include:
+\begin{itemize}
+    \item \textbf{Synopsis:} The function declarations (i.e., the header file contents).
+    
+    \item \textbf{Semantics:} A clear explanation of what the function does.
+    
+    \item \textbf{Preconditions:} What must be true \textit{before} a user calls the function? (e.g., ``pointer must not be null,'' ``value must be positive'').
+    
+    \item \textbf{Postconditions:} What do you guarantee will be true \textit{after} the function returns (assuming the preconditions were met)?
+    
+    \item \textbf{Dependencies:} What other libraries or components does this library need?
+    
+    \item \textbf{Exception guarantees:} How does the function behave if an error occurs? (e.g., ``no-throw,'' ``basic,'' or ``strong'' guarantee).
+\end{itemize}
+
+For example, our \texttt{square} function:
+\begin{itemize}
+    \item \textbf{Synopsis:} \texttt{double square(double x);}
+    
+    \item \textbf{Semantics:} Calculates the square of \texttt{x}.
+    
+    \item \textbf{Preconditions:} \texttt{std::abs(x) <= std::sqrt(std::numeric\_limits<double>::max())} (i.e., the square will not overflow a \texttt{double}).
+    
+    \item \textbf{Postconditions:} The return value is \texttt{x*x}.
+    
+    \item \textbf{Dependencies:} None.
+    
+    \item \textbf{Exception guarantees:} No-throw. Will not throw an exception.
+\end{itemize}
+
+\subsection{Problem 2.2: Simpson Integration Library}
+This is a more advanced exercise to tie all these concepts together.
+
+\textbf{Task:}
+\begin{enumerate}
+    \item Take the Simpson integration algorithm (from a previous exercise) and wrap it in a function. This function should take a \textbf{function pointer} to the integrand, the integration interval, and the number of bins. Use \texttt{assert} to check the validity of input parameters (e.g., number of bins must be positive and even).
+    
+    \item \textbf{Refactor} your Simpson integration function into a header and source file (\texttt{integrate.h}, \texttt{integrate.cpp}).
+    
+    \item \textbf{Document} your Simpson integration function in the header. What are its preconditions and postconditions?
+    
+    \item \textbf{Write a \texttt{Makefile}} (which we will learn about next) that compiles the function for you. Make sure it only recompiles the files that have changed.
+    
+    \item \textbf{Compile a static library}, \texttt{libintegrate.a}, that contains your Simpson integration function. Rewrite your \texttt{Makefile} to link your main program against this library.
+\end{enumerate}
+
+\textit{Hint:} You will need to learn about the syntax for ``pointers to functions.''
+
+\newpage
+\section{Build Automation with \texttt{make}}
+As you saw in the last exercise, the build process for even a simple program can become tedious:
+\begin{verbatim}
+$ c++ -c a.cpp
+$ c++ -c b.cpp
+$ c++ -c c.cpp
+...
+$ c++ -Iinclude -o my_program main.o a.o b.o c.o -Llib -lA -lB
+\end{verbatim}
+This is tedious and error-prone. What happens if you change a header file, \texttt{a.h}? You have to remember to recompile \texttt{a.cpp} and \texttt{main.cpp} (if it includes \texttt{a.h}), and then re-link. It's too much to track by hand.
+
+The solution is a \textbf{build automation tool}. We will focus on one of the oldest and most common: \textbf{Make}.
+
+\subsection{What is \texttt{make}?}
+\textbf{Make} is a build automation tool created by Stuart Feldman at Bell Labs in the 1970s. Its primary job is to build \textbf{targets} (like executables, libraries, or even PDF reports) by following \textbf{rules} and managing \textbf{dependencies}.
+
+Its most important feature is that \textbf{it keeps track of updates!}
+
+\textbf{Real-world Analogy:} \texttt{make} is a ``smart chef.'' You give it a ``recipe book'' (a file named \texttt{Makefile}) and tell it, ``I want to \texttt{make} the `square' executable.''
+
+\begin{enumerate}
+    \item The chef looks at the rule for `square'. It says: ``To make \texttt{square}, you need \texttt{main.o} and \texttt{square.o}.'' (These are the \textbf{prerequisites} or \textbf{dependencies}).
+    
+    \item It then checks: ``Is \texttt{main.o} up-to-date?'' It does this by comparing file modification times: ``Is \texttt{main.cpp} (its prerequisite) \textit{newer} than \texttt{main.o}?''
+    
+    \item If \texttt{main.cpp} is newer, the chef knows \texttt{main.o} is ``stale'' and must be ``re-cooked.'' It runs the \textbf{command} to re-compile it (e.g., \texttt{c++ -c main.cpp}).
+    
+    \item It does the same check for \texttt{square.o}.
+    
+    \item Once all prerequisites are up-to-date, it runs the final \textbf{command} to build the `square' target (the linking step).
+\end{enumerate}
+
+If you run \texttt{make} again without changing any files, the chef sees that all targets are newer than their prerequisites and does nothing.
+
+We will use \textbf{GNU Make}, the standard on Linux and macOS. Be aware:
+\begin{itemize}
+    \item Make is its own "little language," and its syntax is cryptic.
+    \item It has no real debugger.
+    \item It requires a good understanding of the command line shell.
+\end{itemize}
+
+\subsection{Basic \texttt{Makefile} Syntax}
+\texttt{make} looks for a build file named \texttt{Makefile}, \texttt{makefile}, or \texttt{GNUmakefile} in your directory. This file contains the "recipes," which are called \textbf{rules}.
+
+The basic syntax for a rule is:
+\begin{verbatim}
+target: prerequisites
+[TAB]commands
+\end{verbatim}
+\begin{itemize}
+    \item \textbf{target:} The file we want to build (e.g., \texttt{square.o}).
+    \item \textbf{prerequisites:} The files needed to build the target (e.g., \texttt{square.cpp}).
+    \item \textbf{commands:} The shell commands to execute to build the target.
+\end{itemize}
+\textbf{CRITICAL WARNING:} The command line \textit{must} start with a literal \textbf{Tab} character, not spaces. This is the most common and frustrating error for new \texttt{make} users.
+
+Comments in a \texttt{Makefile} start with \texttt{\#}.
+
+Here is a minimal example:
+\begin{verbatim}
+# hello.mk
+# A simple example
+hello:
+    echo Hello students
+\end{verbatim}
+This file defines one target, \texttt{hello}, which has no prerequisites and one command. To run it, we use the \texttt{-f} flag to specify the filename:
+\begin{verbatim}
+$ make -f hello.mk
+echo Hello students
+Hello students
+\end{verbatim}
+You can also do a ``dry run'' with \texttt{-n} to see what commands \texttt{make} \textit{would} run, without actually running them. This is very useful for debugging.
+\begin{verbatim}
+$ make -f hello.mk -n
+echo Hello students
+\end{verbatim}
+
+\subsection{A C++ \texttt{Makefile} Example}
+Let's write a \texttt{Makefile} for our \texttt{square} program. We want to automate these manual commands:
+\begin{verbatim}
+$ c++ -c square.cpp
+$ c++ -c main.cpp
+$ c++ -o square main.o square.o
+\end{verbatim}
+Here is our first attempt at a \texttt{Makefile} (\texttt{simple\_try-01.mk}):
+\begin{verbatim}
+# simple_try-01.mk
+square.o: square.cpp square.hpp
+    c++ -c square.cpp
+
+main.o: main.cpp square.hpp
+    c++ -c main.cpp
+
+square: main.o square.o
+    c++ -o square main.o square.o
+\end{verbatim}
+Note that we added \texttt{square.hpp} as a prerequisite for both object files. This is correct! If the header file changes, we \textit{want} both \texttt{.cpp} files to be recompiled.
+
+Now, let's try to run it:
+\begin{verbatim}
+$ make -f simple_try-01.mk
+c++ -c square.cpp
+\end{verbatim}
+It only built \texttt{square.o}! Why? \textbf{By default, \texttt{make} only builds the \textit{first} target in the file}.
+
+We can fix this by explicitly telling \texttt{make} which target to build:
+\begin{verbatim}
+$ make -f simple_try-01.mk square
+\end{verbatim}
+This works, but it's not ideal.
+
+\subsection{Phony Targets: \texttt{all} and \texttt{clean}}
+A better solution is to add a new \textit{first target} that depends on the final program. By convention, this target is called \texttt{all}.
+\begin{verbatim}
+# simple.mk
+.PHONY: all
+all: square
+
+square.o: square.cpp square.hpp
+    c++ -c square.cpp
+...
+\end{verbatim}
+
+The \texttt{all} target is now first, so it's the default. Its prerequisite is \texttt{square}. So, \texttt{make} says, ``To build \texttt{all}, I must first build \texttt{square}.'' It then finds the \texttt{square} rule and proceeds as we want.
+
+The \texttt{.PHONY: all} line is important. It tells \texttt{make} that \texttt{all} is a ``phony'' target; it's not a real file. This prevents \texttt{make} from getting confused if you ever create a file named \texttt{all}.
+
+Another common phony target is \texttt{clean}, used to remove all generated files.
+\begin{verbatim}
+.PHONY: clean
+clean:
+    rm -f *.o square
+\end{verbatim}
+
+We make it \texttt{.PHONY} because we \textit{always} want to run this command, even if a file named \texttt{clean} happens to exist.
+
+\section{Improving the \texttt{Makefile} (The DRY Principle)}
+Our \texttt{Makefile} works, but it's not good. It's ``WET'' (Write Every Time). We want it to be ``DRY'' (Don't Repeat Yourself).
+
+Our \texttt{Makefile} has several problems:
+\begin{itemize}
+    \item \textbf{Repetition:} We write \texttt{square.cpp} twice, \texttt{main.o} twice, etc.
+    
+    \item \textbf{Hardcoded Compiler:} What if we want to use \texttt{clang++} instead of \texttt{c++}? We'd have to edit 3 lines.
+    
+    \item \textbf{Hardcoded Flags:} What if we need to add compiler flags like \texttt{-Wall}?
+    
+    \item \textbf{No Cleanup:} We haven't added a \texttt{clean} target.
+\end{itemize}
+
+\subsection{Automatic Variables}
+\texttt{make} has special ``automatic variables'' that are set for each rule. They are powerful shortcuts.
+\begin{itemize}
+    \item \texttt{\$@}: The file name of the target of the rule. (``The dish I'm making.'')
+    
+    \item \texttt{\$<}: The name of the \textit{first} prerequisite. (``The first ingredient.'')
+    
+    \item \texttt{\$\^}: The names of \textit{all} prerequisites. (``All the ingredients.'')
+\end{itemize}
+
+Let's update our \texttt{Makefile} to use them:
+\begin{verbatim}
+# simple.mk
+.PHONY: all
+all: square
+
+square.o: square.cpp square.hpp
+    c++ -c $<   # $< is square.cpp
+
+main.o: main.cpp square.hpp
+    c++ -c $<   # $< is main.cpp
+
+square: main.o square.o
+    c++ -o $@ $^   # $@ is square, $^ is main.o square.o
+\end{verbatim}
+This is much better! The commands are now generic.
+
+\subsection{Predefined and Custom Variables}
+\texttt{make} also has many predefined variables for common tools. We should use them.
+\begin{itemize}
+    \item \texttt{CXX}: The C++ compiler (default \texttt{g++}).
+    
+    \item \texttt{CXXFLAGS}: Extra flags for the C++ compiler.
+    
+    \item \texttt{RM}: The remove command (default \texttt{rm -f}).
+    
+    \item \texttt{LDFLAGS}: Extra flags to give to the linker (e.g., \texttt{-Llib}).
+    
+    \item \texttt{LDLIBS}: Library flags for the linker (e.g., \texttt{-lsquare}).
+\end{itemize}
+
+We can set these variables ourselves at the top of the \texttt{Makefile}, and refer to them using \texttt{\${VAR}} or \texttt{\$(VAR)}.
+
+Let's create our final, robust \texttt{Makefile}:
+\begin{verbatim}
+# Set our variables
+CXX = c++
+CXXFLAGS = -std=c++11
+CXXFLAGS += -Wall -Wextra -Wpedantic
+CXXFLAGS += -O3
+
+.PHONY: all
+all: square
+
+square.o: square.cpp square.hpp
+    ${CXX} ${CXXFLAGS} -c $<
+
+main.o: main.cpp square.hpp
+    ${CXX} ${CXXFLAGS} -c $<
+
+square: main.o square.o
+    ${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS} ${LDLIBS}
+
+.PHONY: clean
+clean:
+    ${RM} *.o square
+\end{verbatim}
+Notice we use \texttt{+=} to \textit{append} to the \texttt{CXXFLAGS} variable. This \texttt{Makefile} is clean, easy to read, and easy to modify. If we want to change the compiler, we only edit one line.
+
+\subsection{Customizing Builds with \texttt{include}}
+What if your collaborators need different compilers or flags (e.g., one uses \texttt{g++-9} and another uses \texttt{clang++})? If you all edit the \texttt{Makefile}, you'll have conflicts in version control.
+
+A better way is to use \texttt{include}.
+\begin{verbatim}
+# Try to include a local config file
+-include config.mk
+
+# Set defaults if not provided
+CXX ?= c++
+CXXFLAGS ?= -std=c++11 -O3 -Wall
+
+.PHONY: all
+all: square
+...
+\end{verbatim}
+This is a more advanced but common pattern.
+\begin{itemize}
+    \item \texttt{-include config.mk}: The dash \texttt{-} tells \texttt{make} ``it's okay if this file doesn't exist.''
+    
+    \item \texttt{CXX ?= c++}: The \texttt{?=} operator means ``set this variable \textit{only if} it hasn't already been set.''
+\end{itemize}
+
+This allows each user to create their own \texttt{config.mk} file with their personal settings (e.g., \texttt{CXX = clang++}) and keep it out of version control. If \texttt{config.mk} exists, it sets the variables. If not, the \texttt{?=} defaults are used.
+
+You should provide a \texttt{config.mk.example} file in version control for new users to copy.
+
+\section{Advanced \texttt{make} and Further Reading}
+This is just the beginning. More advanced \texttt{make} topics include:
+\begin{itemize}
+    \item \textbf{Pattern Rules:} Write a single rule to build \textit{all} \texttt{.o} files from \texttt{.cpp} files.
+    
+    \item \textbf{Automatic Dependency Generation:} A way to have \texttt{make} automatically detect which headers a \texttt{.cpp} file includes, so you don't have to list them by hand.
+\end{itemize}
+
+Finally, \texttt{make} is not just for building software! It's a general-purpose dependency-management tool. You can use it to ``build'' a scientific paper.
+
+\textbf{Analogy for Reproducibility:} Imagine a \texttt{Makefile} for a paper.
+\begin{itemize}
+    \item The \texttt{paper.pdf} (target) depends on \texttt{results.tex} and \texttt{plot.png}.
+    
+    \item \texttt{plot.png} (target) depends on \texttt{data.csv} and \texttt{plot.py}.
+    
+    \item \texttt{data.csv} (target) depends on \texttt{simulation.cpp}.
+\end{itemize}
+If you change your simulation code (\texttt{simulation.cpp}), typing \texttt{make} will automatically re-run the simulation, re-generate the data, re-draw the plot, and re-compile the PDF. This traces your entire workflow and is \textbf{excellent for reproducibility}.
+
+For more information, see the official GNU Make documentation, or use the \texttt{man make} and \texttt{info make} commands.
+
+\end{document}

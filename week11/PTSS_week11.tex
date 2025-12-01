@@ -1,0 +1,447 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ A Detailed Textbook}
+\author{Based on lecture slides}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Programming Techniques for Scientific Simulations},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction to C++ Optimization}
+
+In the realm of scientific computing, performance is paramount. While algorithmic complexity (Big O notation) determines the theoretical limit of a program's speed, the practical implementation details can vary performance by orders of magnitude. 
+
+Previous discussions in this course likely covered language-agnostic optimizations—techniques applicable whether you are writing in Python, Java, or C. However, C++ offers a unique suite of tools that allow developers to intervene at a low level, instructing the compiler to generate highly efficient machine code.
+
+This chapter explores advanced C++-specific optimizations. We will progress from simple compiler hints to complex metaprogramming techniques used in high-performance libraries. The topics covered include:
+\begin{itemize}
+    \item \textbf{Inlining:} Reducing function call overhead.
+    \item \textbf{Copy Elision \& (N)RVO:} Managing memory efficiently during object returns.
+    \item \textbf{Template Metaprogramming (TMP):} Using the compiler to perform calculations before the program runs.
+    \item \textbf{Expression Templates:} A technique to achieve lazy evaluation and eliminate temporary objects in mathematical operations.
+\end{itemize}
+
+\section{Function Inlining}
+
+\subsection{The Cost of Abstraction}
+In structured programming, we are taught to break code into small, reusable functions. However, every function call incurs a runtime cost, known as \textit{overhead}.
+
+When a function is called:
+\begin{enumerate}
+    \item The current execution state (registers, instruction pointer) is pushed onto the stack.
+    \item Arguments are copied to registers or the stack.
+    \item The CPU jumps to the memory address of the function.
+    \item The code executes.
+    \item The return value is handled, and the CPU jumps back to the original location.
+\end{enumerate}
+
+For very small functions (e.g., getting a coordinate of a point), this overhead can take longer than the actual calculation inside the function.
+
+\subsection{The \texttt{inline} Keyword}
+The \texttt{inline} keyword is a request to the compiler to replace the function call site with the actual body of the function.
+
+\subsubsection{Analogy}
+Imagine you are reading a textbook (your \texttt{main} function). Every time you see a difficult word (a function call), you have to walk to the library (memory jump) to look it up in a dictionary. This is slow.
+\textit{Inlining} is like having the definition of the word written on a sticky note right next to the word in your textbook. You read it instantly without stopping your flow.
+
+\subsubsection{Syntax and Usage}
+\begin{lstlisting}[language=C++, caption={Using the inline keyword}]
+inline double square(double x) {
+    return x * x;
+}
+
+int main() {
+    double val = 5.0;
+    // The compiler sees this as: double result = 5.0 * 5.0;
+    double result = square(val); 
+}
+\end{lstlisting}
+
+\subsubsection{Secondary Optimizations}
+The primary benefit of inlining is removing the jump overhead. However, a more significant benefit is enabling \textbf{secondary optimizations}.
+When the compiler sees the function code in the context of the calling code, it can simplify logic. For example, if you call `square(5.0)`, an inlined version allows the compiler to calculate `25.0` at compile time (Constant Folding), completely removing the multiplication instruction from the final executable.
+
+\section{Copy Elision and Return Value Optimization}
+
+In C++, objects often manage resources like dynamic memory. Copying these objects can be expensive (requiring memory allocation and data duplication). A major goal in C++ optimization is to minimize these copies.
+
+\subsection{The Problem: Returning Objects}
+Consider a function that creates a local object and returns it. Naively, one might expect the following steps:
+1.  **Construction:** The object is created inside the function.
+2.  **Copy 1:** The object is copied to a temporary location for the return value.
+3.  **Copy 2:** The temporary is copied to the variable in `main` assigned to the result.
+4.  **Destruction:** The temporary and local objects are destroyed.
+
+This process involves unnecessary work.
+
+\subsection{The Solution: Copy Elision}
+Copy elision allows the compiler to omit the copy and move constructors, even if they have side effects. effectively, the compiler "constructs" the object directly in the memory location where it will ultimately live.
+
+\subsubsection{RVO vs. NRVO}
+There are two specific flavors of this optimization:
+
+\begin{enumerate}
+    \item \textbf{RVO (Return Value Optimization):} Occurs when returning a temporary, unnamed object.
+    \item \textbf{NRVO (Named Return Value Optimization):} Occurs when returning a named variable declared inside the function.
+\end{enumerate}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_copy_elision_diagram.png}
+    \caption{}
+    \label{fig:copy_elision}
+\end{figure}
+
+\subsection{Code Demonstration}
+The following example demonstrates the syntax and the difference between RVO and NRVO.
+
+\begin{lstlisting}[language=C++, caption={Demonstrating RVO and NRVO}]
+#include <iostream>
+
+struct C {
+    C() { std::cout << "C constructor\n"; }
+    C(const C&) { std::cout << "C copy constructor\n"; }
+};
+
+// Return Value Optimization (RVO)
+// Returns a temporary (unnamed) object.
+C f() {
+    return C(); 
+}
+
+// Named Return Value Optimization (NRVO)
+// Returns a named local variable 'c'.
+C g() {
+    C c;
+    return c;
+}
+
+int main() {
+    std::cout << "Calling f():\n";
+    C c1 = f(); // Result: "C constructor" (No copy!)
+    
+    std::cout << "Calling g():\n";
+    C c2 = g(); // Result: "C constructor" (No copy!)
+}
+\end{lstlisting}
+
+\textbf{Note:} Since C++17, RVO is mandatory. The compiler is required to elide the copy. NRVO remains an optional optimization, though most modern compilers perform it aggressively.
+
+\section{Template Metaprogramming (TMP)}
+
+Template Metaprogramming is a technique where templates are used to perform computations at \textbf{compile-time} rather than \textbf{run-time}.
+
+\subsection{Concept: The Compiler as a Computer}
+Usually, we think of a compiler as a translator (converting C++ to Assembly). However, the C++ template system is Turing-complete. This means the compiler itself can act as an interpreter, executing logic, loops, and branches during the translation process.
+
+\subsubsection{Analogy}
+Imagine a chef (the programmer) writing a recipe for a line cook (the CPU).
+\begin{itemize}
+    \item \textbf{Run-time calculation:} The recipe says, "Take the number of guests (which you will know when dinner starts) and multiply by 2 to get the number of eggs." The cook does the math.
+    \item \textbf{Compile-time calculation (TMP):} The recipe says, "I know we have exactly 5 guests. Calculate $5 \times 2$ now." The chef calculates 10 and writes "Use 10 eggs" in the recipe. The cook does zero math; they just use the result.
+\end{itemize}
+
+\subsection{Mechanics of TMP}
+In TMP, we don't use standard `for` loops or `if` statements because those are runtime instructions. Instead, we use:
+\begin{itemize}
+    \item \textbf{Recursion} to replace Loops.
+    \item \textbf{Template Specialization} to replace Branches (If/Else).
+\end{itemize}
+
+\subsection{Example: Calculating Factorials}
+A classic "Hello World" for TMP is calculating a factorial ($N!$) at compile time.
+
+\subsubsection{Step 1: The Recursive Step (The Loop)}
+We define a struct that calculates its value based on the same struct with $N-1$.
+
+\begin{lstlisting}[language=C++, caption={Recursive Template Struct}]
+template<int N>
+struct Factorial {
+    // value = N * (N-1)!
+    enum { value = N * Factorial<N-1>::value };
+};
+\end{lstlisting}
+
+\subsubsection{Step 2: The Base Case (The Stopping Condition)}
+We must stop the recursion when $N=1$. We do this by specializing the template for the integer 1.
+
+\begin{lstlisting}[language=C++, caption={Template Specialization}]
+template<>
+struct Factorial<1> {
+    enum { value = 1 };
+};
+\end{lstlisting}
+
+\subsubsection{Usage}
+When you write \texttt{int x = Factorial<5>::value;}, the compiler expands this recursively:
+\begin{enumerate}
+    \item \texttt{Factorial<5>} needs \texttt{Factorial<4>}.
+    \item \texttt{Factorial<4>} needs \texttt{Factorial<3>}.
+    \item ...
+    \item \texttt{Factorial<1>} returns 1.
+\end{enumerate}
+The compiler effectively replaces your code with \texttt{int x = 120;}.
+
+\section{Loop Unrolling with TMP}
+
+One of the most practical applications of TMP in scientific computing is \textbf{Loop Unrolling}.
+
+\subsection{The Bottleneck: Small Vector Dot Products}
+Consider the dot product of two vectors $a$ and $b$: $result = \sum a_i \times b_i$.
+For very small vectors (e.g., $N < 10$), the overhead of the `for` loop (incrementing the counter, checking $i < N$) dominates the execution time.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_dot_product_performance_graph.png}
+    \caption{}
+    \label{fig:dot_product_perf}
+\end{figure}
+
+\subsection{Manual Unrolling}
+We could manually write:
+\begin{verbatim}
+return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+\end{verbatim}
+This is fast, but it is not flexible. It only works for a fixed size $N$.
+
+\subsection{Automated Unrolling via TMP}
+We can use templates to generate this unrolled code for any $N$.
+
+\subsubsection{Implementation}
+We define a helper struct `meta\_dot` that performs the recursion.
+
+\begin{lstlisting}[language=C++, caption={Meta Dot Product Implementation}]
+// General recursive case
+template<int I>
+struct meta_dot {
+    template<typename T>
+    static T f(const T* a, const T* b) {
+        // Calculate current index + recursive call for I-1
+        return a[I] * b[I] + meta_dot<I-1>::f(a, b);
+    }
+};
+
+// Base case (Stopping condition)
+template<>
+struct meta_dot<0> {
+    template<typename T>
+    static T f(const T* a, const T* b) {
+        return a[0] * b[0];
+    }
+};
+
+// Wrapper function for clean API
+template<int N, typename T>
+inline T dot(const T* a, const T* b) {
+    return meta_dot<N-1>::f(a, b);
+}
+\end{lstlisting}
+
+\subsection{Trace of Execution}
+Let's trace what happens when we call \texttt{dot<4>(a, b)}.
+
+1.  The compiler sees \texttt{dot<4>}. It calls \texttt{meta\_dot<3>::f(a, b)}.
+2.  \texttt{meta\_dot<3>} expands to: \texttt{a[3]*b[3] + meta\_dot<2>::f(a, b)}.
+3.  \texttt{meta\_dot<2>} expands to: \texttt{a[2]*b[2] + meta\_dot<1>::f(a, b)}.
+4.  \texttt{meta\_dot<1>} expands to: \texttt{a[1]*b[1] + meta\_dot<0>::f(a, b)}.
+5.  \texttt{meta\_dot<0>} is the base case. It expands simply to: \texttt{a[0]*b[0]}.
+
+\textbf{Final Compiled Code:}
+The compiler collapses all these function calls into a single expression:
+\begin{lstlisting}[language=C++]
+return a[3]*b[3] + a[2]*b[2] + a[1]*b[1] + a[0]*b[0];
+\end{lstlisting}
+This achieves the speed of manual unrolling with the flexibility of loops.
+
+\section{Expression Templates and Lazy Evaluation}
+
+This is arguably the most powerful technique in C++ scientific libraries (used in Eigen, Blitz++, Armadillo). It addresses the inefficiency of operator overloading for mathematical objects.
+
+\subsection{The Problem: Temporary Objects}
+We want to write natural mathematical syntax for vectors:
+\begin{lstlisting}[language=C++]
+Vector D = A + B + C;
+\end{lstlisting}
+
+If we use standard operator overloading, the execution order is:
+\begin{enumerate}
+    \item \texttt{Tmp1 = A + B;} (Allocates memory for Tmp1, loops to add A and B).
+    \item \texttt{D = Tmp1 + C;} (Allocates memory for D, loops to add Tmp1 and C).
+    \item \texttt{Tmp1} is destroyed.
+\end{enumerate}
+For large vectors, creating intermediate temporary vectors (`Tmp1`) kills performance and thrashes the CPU cache.
+
+\subsection{The Solution: Lazy Evaluation}
+\textbf{Lazy Evaluation} means we delay the calculation until we actually need the result.
+When we write \texttt{A + B + C}, we do \textit{not} want to add numbers yet. We want to build a small object that \textit{represents} the idea of "The sum of A, B, and C".
+
+\subsubsection{Analogy}
+Imagine ordering a complex meal at a restaurant: "I want a burger plus fries plus a soda."
+\begin{itemize}
+    \item \textbf{Eager Evaluation (Standard C++):} The waiter runs to the kitchen, gets a burger. Then runs back, gets fries. Then runs back, gets a soda.
+    \item \textbf{Lazy Evaluation (Expression Templates):} The waiter writes down "Burger + Fries + Soda" on a ticket. No food is cooked yet. The ticket is passed to the chef, who makes everything in one efficient flow.
+\end{itemize}
+
+\subsection{Building the Expression Template}
+
+We need a structure that acts as the "ticket". It stores references to the data, not the data itself.
+
+\subsubsection{1. The Operation Structs}
+First, we define small functors for arithmetic operations.
+\begin{lstlisting}[language=C++, caption={Operation Functors}]
+struct plus {
+    static double apply(double a, double b) { return a + b; }
+};
+
+struct minus {
+    static double apply(double a, double b) { return a - b; }
+};
+\end{lstlisting}
+
+\subsubsection{2. The Expression Node (The "Ticket")}
+We create a class `X` that represents a node in a parse tree. It holds a left operand (`L`), a right operand (`R`), and an operation (`Op`).
+
+\begin{lstlisting}[language=C++, caption={The Expression Template Node}]
+template <typename L, typename R, typename Op>
+class X {
+    const L& l_; // Reference to left operand
+    const R& r_; // Reference to right operand
+public:
+    X(const L& l, const R& r) : l_(l), r_(r) {}
+
+    // The Magic: Compute value on demand
+    double operator[](int i) const {
+        return Op::apply(l_[i], r_[i]);
+    }
+};
+\end{lstlisting}
+
+\subsubsection{3. Overloading the Operator}
+The `operator+` does not add vectors. It creates an `X` object.
+
+\begin{lstlisting}[language=C++, caption={Operator Overloading returning Expression}]
+template <typename L, typename R>
+X<L, R, plus> operator+(const L& l, const R& r) {
+    return X<L, R, plus>(l, r);
+}
+\end{lstlisting}
+
+\subsection{How It Works: The Parse Tree}
+When we write \texttt{A + B + C}:
+1. \texttt{A + B} returns an object of type \texttt{X<Vector, Vector, plus>}. Let's call this $E_1$.
+2. $E_1 + C$ returns an object of type \texttt{X< E_1, Vector, plus>}.
+
+This final object is a tree structure encoded in the C++ type system. It contains no data, only references to $A, B, C$.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_ast_diagram.png}
+    \caption{}
+    \label{fig:ast}
+\end{figure}
+
+\subsection{The Trigger: Assignment}
+The actual calculation happens only when we assign the expression to a destination vector.
+
+\begin{lstlisting}[language=C++, caption={Assignment triggers evaluation}]
+// Inside the Vector class
+template <typename Expr>
+Vector& operator=(const Expr& expr) {
+    for (int i = 0; i < N; ++i) {
+        // expr[i] recursively triggers the calculation
+        data_[i] = expr[i]; }
+    return *this;
+}
+\end{lstlisting}
+
+At index $i$, \texttt{expr[i]} expands to:
+$$ (A[i] + B[i]) + C[i] $$
+The compiler inlines everything. The result is a single loop that reads $A, B, C$ once and writes to $D$. This matches the performance of hand-optimized C or Fortran.
+
+\section{Summary and Historical Context}
+
+\subsection{Comparison with Fortran}
+Historically, Fortran was the gold standard for scientific computing because its restricted pointer model allowed aggressive optimization. C++ often lagged due to pointer aliasing and temporary object creation.
+However, with the advent of Expression Templates (pioneered by the \textbf{Blitz++} library), C++ demonstrated it could achieve parity with, and occasionally exceed, Fortran performance.
+
+\subsection{Modern Usage}
+Today, you generally do not need to write your own Expression Templates. They are the engine under the hood of modern high-performance linear algebra libraries, including:
+\begin{itemize}
+    \item \textbf{Eigen:} Used extensively in robotics and machine learning (e.g., TensorFlow).
+    \item \textbf{Armadillo:} Popular for its MATLAB-like syntax.
+    \item \textbf{Blaze:} Known for high-performance arithmetic.
+\end{itemize}
+
+By understanding these internal mechanisms—Inlining, RVO, TMP, and Expression Templates—you can write C++ code that is not only high-level and readable but also incredibly efficient.
+
+\end{document}

@@ -1,0 +1,423 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ \Large Optimization and Numerical Libraries}
+\author{Comprehensive Study Guide & Textbook}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Programming Techniques for Scientific Simulations},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction: To Code or Not to Code?}
+
+In the realm of scientific simulations, performance is a critical metric. A simulation that takes weeks to run is significantly less useful than one that runs in hours. However, the pursuit of speed often leads novice programmers into the trap of "premature optimization." This chapter serves as a comprehensive guide to code optimization, traversing the landscape from high-level algorithmic choices down to low-level hardware considerations.
+
+We will explore the philosophy of optimization, methods for measuring performance (profiling), the impact of data structures, compiler capabilities, and finally, the use of specialized numerical libraries.
+
+\section{The Philosophy of Optimization}
+
+\subsection{The First Rule: Do Not Optimize}
+It may seem paradoxical for a chapter on optimization to begin with an instruction not to optimize, but this is the golden rule of software engineering. 
+
+\textbf{Why?} Optimized code is often complex, obscure, and difficult to debug. It is usually larger and more fragile than simple, readable code. In scientific computing, \textit{correctness} is paramount. A fast simulation that produces incorrect physics is worthless. Therefore, your priority should always be to write clear, correct, and maintainable code first.
+
+\subsection{The Optimization Workflow}
+If, and only if, your program is proven to be too slow for your requirements, you should proceed with optimization. However, you must not simply guess where the code is slow. You must follow a strict hierarchy of interventions to avoid wasting effort on parts of the code that do not impact overall runtime.
+
+\begin{enumerate}
+    \item \textbf{Compiler Optimization Flags:} Let the machine do the work. Modern compilers are incredibly smart. Before changing a single line of code, check if flags like \texttt{-O3} solve the problem.
+    \item \textbf{Find Optimal Algorithm:} A better mathematical approach beats code tuning every time. An $O(N)$ algorithm will eventually outperform an optimized $O(N^2)$ algorithm as $N$ grows.
+    \item \textbf{Use Libraries:} Do not reinvent the wheel. Standard libraries (like BLAS or STL) are written by experts and highly tuned for hardware.
+    \item \textbf{Profiling:} If the program is still slow, you must measure (profile) it to find the exact bottleneck. 
+    \item \textbf{Data Structures:} Investigate whether you are using the right containers (e.g., \texttt{std::vector} vs. \texttt{std::list}).
+    \item \textbf{Manual Optimization:} Only as a last resort should you rewrite code to be "clever" (e.g., unrolling loops, vectorization).
+\end{enumerate}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_optimization_flowchart.png}
+    \caption{The Optimization Decision Tree: Start at the top (Compiler Flags) and only move down if performance is still insufficient.}
+\end{figure}
+
+\section{Measuring Performance: Profiling}
+
+You cannot optimize what you cannot measure. "Profiling" is the act of analyzing a program's behavior during execution to determine which parts occupy the most resources.
+
+\subsection{Simple Timing: The \texttt{time} Command}
+The coarsest method of measurement is the Unix \texttt{time} utility. It measures the total duration of a program's execution.
+
+\subsubsection{Syntax and Output}
+\begin{lstlisting}[language=bash, caption=Using the time command]
+time ./my_simulation
+\end{lstlisting}
+
+The output typically provides three distinct metrics:
+\begin{itemize}
+    \item \textbf{Real (Wall-clock time):} The total time elapsed from start to finish, as if measured by a stopwatch on the wall. This includes time spent waiting for disk I/O or other processes.
+    \item \textbf{User (User CPU time):} The time the CPU spent actually executing your code.
+    \item \textbf{Sys (System/Kernel time):} The time the CPU spent executing operating system calls on behalf of your program (e.g., reading a file, allocating memory).
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{placeholder_linux_time_output.png}
+    \caption{Example output of the Linux \texttt{time} command showing Real, User, and Sys times.}
+\end{figure}
+
+\subsection{Function-Level Profiling: \texttt{gprof}}
+When you need to know \textit{which specific function} is slowing you down, the GNU Profiler (\texttt{gprof}) is a standard tool. It constructs a "call graph" showing how much time is spent in each function and how many times each function was called.
+
+\subsubsection{The 3-Step Process}
+\begin{enumerate}
+    \item \textbf{Compile with Instrumentation:} You must tell the compiler to insert profiling code into your binary using the \texttt{-pg} flag.
+    \begin{lstlisting}[language=bash]
+g++ -pg main.cpp -o main
+    \end{lstlisting}
+    
+    \item \textbf{Run the Program:} Execute your binary as normal. It will run slightly slower due to the overhead and generate a file named \texttt{gmon.out}.
+    \begin{lstlisting}[language=bash]
+./main
+    \end{lstlisting}
+    
+    \item \textbf{Analyze the Data:} Use the \texttt{gprof} tool to read the binary and the output file.
+    \begin{lstlisting}[language=bash]
+gprof ./main gmon.out > analysis.txt
+    \end{lstlisting}
+\end{enumerate}
+
+\textbf{Note on Clusters:} If running on a remote cluster (like Euler), you compile and run on the remote machine, but you may need to use \texttt{scp} (Secure Copy) to transfer the \texttt{gmon.out} file to your local machine for analysis if visual tools are used.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{placeholder_gprof_call_graph.png}
+    \caption{Visualization of a gprof call graph, highlighting the "hot path" where the program spends the most execution time.}
+\end{figure}
+
+\subsection{Manual Instrumentation}
+Sometimes automatic tools introduce too much overhead or provide too much data. In these cases, you can manually insert timers into your C++ code (using the \texttt{std::chrono} library or custom timer classes) to measure specific loops or blocks.
+
+\section{Data Structures and Algorithms}
+
+Choosing the correct container and algorithm is the most high-impact optimization you can perform.
+
+\subsection{Container Selection: Vector, List, or Tree?}
+The Standard Template Library (STL) provides various containers. The choice depends on your access patterns.
+
+\begin{itemize}
+    \item \textbf{Arrays/Vectors (\texttt{std::vector}):} 
+        \begin{itemize}
+            \item \textit{Pros:} Fast random access ($O(1)$), excellent cache locality (contiguous memory).
+            \item \textit{Cons:} Slow insertion/deletion in the middle ($O(N)$) because elements must shift.
+        \end{itemize}
+    \item \textbf{Linked Lists (\texttt{std::list}):}
+        \begin{itemize}
+            \item \textit{Pros:} Fast insertion/deletion anywhere ($O(1)$) if the iterator is known.
+            \item \textit{Cons:} Slow random access ($O(N)$), poor cache locality (nodes scattered in memory).
+        \end{itemize}
+    \item \textbf{Trees (\texttt{std::map}, \texttt{std::set}):} Good for sorted data and searching ($O(\log N)$).
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_vector_vs_list_memory.png}
+    \caption{Memory layout comparison: Vectors occupy a continuous block, while List nodes are scattered and linked by pointers.}
+\end{figure}
+
+\subsection{Case Study: The Penna Model Optimization}
+Consider a simulation (the Penna aging model) where individuals in a population die and must be removed.
+\begin{itemize}
+    \item \textbf{Naive Approach:} Use \texttt{std::list} because "removing from the middle is frequent."
+    \item \textbf{Optimization:} Realizing that the \textit{order} of individuals doesn't matter allowed switching to \texttt{std::vector}.
+    \item \textbf{The Trick:} To remove an element at index $i$ in a vector without shifting all subsequent elements:
+    \begin{enumerate}
+        \item Swap element $i$ with the \textit{last} element.
+        \item Call \texttt{pop\_back()} to remove the last element.
+    \end{enumerate}
+    This turns an $O(N)$ removal into $O(1)$.
+\end{itemize}
+
+\subsection{Algorithmic Complexity (Big O)}
+Optimizing constants (making code 2x faster) is good; optimizing complexity (reducing the power of $N$) is transformative.
+
+\begin{itemize}
+    \item \textbf{Matrix Multiplication:} The standard algorithm is $O(N^3)$. Doubling the matrix size increases runtime by $8x$.
+    \item \textbf{Strassen's Algorithm:} A divide-and-conquer approach that achieves $O(N^{2.807})$. For very large matrices, this is significantly faster.
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{placeholder_strassen_algorithm.png}
+    \caption{Strassen's Algorithm subdivides matrices to reduce the number of recursive multiplications required.}
+\end{figure}
+
+\section{Compiler Optimizations}
+
+Before rewriting code manually, use the compiler's built-in optimization capabilities.
+
+\subsection{Optimization Flags}
+When compiling with \texttt{g++} or \texttt{clang++}, you can specify optimization levels:
+\begin{itemize}
+    \item \texttt{-O0}: No optimization. Best for debugging.
+    \item \texttt{-O1}: Basic optimizations.
+    \item \texttt{-O2}: Recommended for deployment. Performs nearly all supported optimizations that do not involve a space-speed tradeoff.
+    \item \texttt{-O3}: Aggressive optimization. May increase compile time and binary size. Includes vectorization.
+    \item \texttt{-Os}: Optimize for size (useful for embedded systems).
+\end{itemize}
+
+\subsection{What the Compiler Actually Does}
+The compiler performs several transformations to make your code efficient. Understanding these helps you write "compiler-friendly" code.
+
+\subsubsection{1. Common Subexpression Elimination (CSE)}
+The compiler identifies calculations that are performed multiple times with the same inputs and computes them only once.
+
+\textbf{Before Optimization:}
+\begin{lstlisting}
+x = a + b;
+y = (a + b) / 2; // "a + b" is calculated twice
+\end{lstlisting}
+
+\textbf{After Optimization:}
+\begin{lstlisting}
+temp = a + b;
+x = temp;
+y = temp / 2;
+\end{lstlisting}
+
+\subsubsection{2. Strength Reduction}
+Replaces expensive mathematical operations with cheaper ones.
+\begin{itemize}
+    \item \texttt{x * 2} $\rightarrow$ \texttt{x + x} or \texttt{x << 1} (Bit shift).
+    \item \texttt{x / 16} $\rightarrow$ \texttt{x >> 4}.
+\end{itemize}
+
+\subsubsection{3. Loop Invariant Code Motion}
+Moves calculations that do not change inside a loop to the outside, so they are computed only once instead of $N$ times.
+
+\textbf{Before:}
+\begin{lstlisting}
+for (int i = 0; i < N; ++i) {
+    x[i] = y[i] * (c * d); // c*d is constant
+}
+\end{lstlisting}
+
+\textbf{After:}
+\begin{lstlisting}
+double temp = c * d; // Calculated once
+for (int i = 0; i < N; ++i) {
+    x[i] = y[i] * temp;
+}
+\end{lstlisting}
+
+\subsubsection{4. Constant Folding}
+Evaluates constant expressions at compile-time.
+\begin{lstlisting}
+double x = 2.0 * 100.0; // Compiler converts this to "double x = 200.0;"
+\end{lstlisting}
+
+\subsubsection{5. Dead Code Removal}
+Removes code that can never be executed (e.g., inside an \texttt{if (false)} block).
+
+\subsubsection{6. Induction Variable Simplification}
+Simplifies how loop counters and array indices are calculated. Instead of calculating \texttt{index = i * 4} at every step, the compiler typically converts this to a pointer arithmetic operation that simply adds 4 bytes to the memory address at each iteration.
+
+\section{Advanced Optimization \& Memory Hierarchy}
+
+When the compiler reaches its limit, manual intervention regarding memory and CPU architecture is required.
+
+\subsection{Loop Unrolling}
+Loop overhead (checking the condition \texttt{i < N} and incrementing \texttt{i}) takes time. Unrolling reduces this overhead by executing multiple iterations' worth of work in a single loop block.
+
+\textbf{Standard Loop:}
+\begin{lstlisting}
+for (int i = 0; i < N; ++i) { a[i] = b[i] + c[i]; }
+\end{lstlisting}
+
+\textbf{Unrolled Loop (Factor 2):}
+\begin{lstlisting}
+for (int i = 0; i < N; i += 2) {
+    a[i] = b[i] + c[i];
+    a[i+1] = b[i+1] + c[i+1];
+}
+\end{lstlisting}
+\textit{Note:} Modern compilers do this automatically with \texttt{-O3}.
+
+\subsection{Storage Order and Memory Stride}
+This is often the single biggest factor in scientific code performance. 
+
+\begin{itemize}
+    \item \textbf{Row-Major Order (C/C++):} Multidimensional arrays are stored row by row. The element \texttt{A[0][0]} is immediately followed in memory by \texttt{A[0][1]}.
+    \item \textbf{Column-Major Order (Fortran):} Arrays are stored column by column. \texttt{A[0][0]} is followed by \texttt{A[1][0]}.
+\end{itemize}
+
+\textbf{The Golden Rule:} Always access memory with "unit stride" (sequentially). Jumping around memory causes cache misses, which are extremely expensive.
+
+\begin{lstlisting}[caption=Bad Stride in C++ (Slow)]
+// Iterating over columns first (jumping in memory)
+for (int j = 0; j < N; ++j)
+    for (int i = 0; i < N; ++i)
+        A[i][j] = ...; 
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Good Stride in C++ (Fast)]
+// Iterating over rows (sequential memory access)
+for (int i = 0; i < N; ++i)
+    for (int j = 0; j < N; ++j)
+        A[i][j] = ...; 
+\end{lstlisting}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_row_vs_col_major.png}
+    \caption{Visualization of Row-Major vs. Column-Major linearization of a 2D matrix.}
+\end{figure}
+
+\subsection{Cache Blocking (Tiling)}
+CPUs have small, fast caches (L1, L2). If a matrix is too large to fit in the cache, processing it requires fetching data from slow RAM repeatedly.
+
+\textbf{Solution:} Divide the matrix into smaller sub-blocks (tiles) that fit into the cache. Perform all necessary operations on one tile before moving to the next. This maximizes data reuse.
+
+\subsection{The Roofline Model}
+The Roofline Model is a visual performance model used to understand if a program is limited by calculation speed (``Compute Bound'') or by data transfer speed (``Memory Bound'').
+\begin{itemize}
+    \item If your ``Operational Intensity'' (math operations per byte loaded) is low, you are memory bound.
+    \item If it is high, you are compute bound.
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_roofline_model.png}
+    \caption{The Roofline Model: Plotting performance (GFLOPS) against operational intensity.}
+\end{figure}
+
+\section{Numerical Libraries}
+
+The ultimate optimization strategy is to delegate the heavy lifting to libraries written by experts (often in Assembly or Fortran) and tuned by hardware vendors (Intel, AMD).
+
+\subsection{BLAS (Basic Linear Algebra Subroutines)}
+BLAS is the standard interface for low-level vector and matrix mathematics. It is categorized into three levels:
+
+\begin{itemize}
+    \item \textbf{Level 1 (Vector-Vector):} Dot products, vector addition. $O(N)$ operations on $O(N)$ data. Memory bound.
+    \item \textbf{Level 2 (Matrix-Vector):} Matrix-vector multiplication. $O(N^2)$ operations on $O(N^2)$ data.
+    \item \textbf{Level 3 (Matrix-Matrix):} Matrix multiplication. $O(N^3)$ operations on $O(N^2)$ data. Compute bound (most efficient).
+\end{itemize}
+
+\textbf{Implementations:}
+\begin{itemize}
+    \item \textbf{OpenBLAS:} Fast, open-source.
+    \item \textbf{Intel MKL (Math Kernel Library):} Highly optimized for Intel processors.
+    \item \textbf{AMD AOCL:} Optimized for AMD processors.
+\end{itemize}
+
+\subsection{LAPACK (Linear Algebra PACKage)}
+LAPACK is built on top of BLAS. It solves higher-level linear algebra problems, such as:
+\begin{itemize}
+    \item Systems of linear equations ($Ax = b$).
+    \item Eigenvalue problems.
+    \item Matrix factorizations (LU, QR, SVD).
+\end{itemize}
+
+\subsection{Interfacing C++ with Fortran Libraries}
+Since BLAS and LAPACK are often written in Fortran, calling them from C++ requires specific care.
+
+\begin{enumerate}
+    \item \textbf{Symbol Names:} Use \texttt{extern "C"} to prevent C++ name mangling. Note that Fortran compilers often append an underscore to function names (e.g., \texttt{dgemm\_}).
+    \item \textbf{Pass by Reference:} Fortran passes everything by reference. You must pass pointers to your numbers, not the numbers themselves.
+    \item \textbf{Indexing:} Fortran uses 1-based indexing; C++ uses 0-based indexing.
+\end{enumerate}
+
+\begin{lstlisting}[caption=Calling a Fortran function from C++]
+extern "C" {
+    // Declaration of a Fortran function 'foo'
+    // In the object code, it is likely named 'foo_'
+    void foo_(int* n, double* x);
+}
+
+int main() {
+    int n = 10;
+    double val = 3.14;
+    // Must pass addresses (&n, &val)
+    foo_(&n, &val); 
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{Other Essential Libraries}
+\begin{itemize}
+    \item \textbf{FFTW (Fastest Fourier Transform in the West):} A self-tuning library for computing Discrete Fourier Transforms. It determines the best algorithm for the specific hardware at runtime.
+    \item \textbf{GSL (GNU Scientific Library):} A comprehensive collection of numerical routines, including random number generation, root finding, interpolation, and special functions (Bessel, Legendre, etc.).
+\end{itemize}
+
+\section{Conclusion}
+Optimization is a journey from high-level design to low-level hardware manipulation. By following the "Do Not Optimize" rule initially, measuring with profiling tools, choosing correct data structures, trusting the compiler, and utilizing standard libraries like BLAS and LAPACK, you can write scientific code that is both correct and incredibly fast.
+
+\end{document}

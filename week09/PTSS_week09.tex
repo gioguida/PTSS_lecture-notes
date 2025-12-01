@@ -1,0 +1,652 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry} % Generous margins for a textbook feel
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+\usepackage{titlesec} % For customizing section headers
+\usepackage{setspace} % For line spacing
+
+% Set a more readable line spacing
+\setstretch{1.1}
+
+% Define colors for code listings and headings (must be defined before use)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.98,0.98,0.98} % Lighter background
+\definecolor{darkgray}{rgb}{0.3,0.3,0.3}
+
+% Customize section headings for a "textbook" look
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{darkgray}}
+    {\thesection}
+    {1em}
+    {}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries}
+    {\thesubsection}
+    {1em}
+    {}
+
+% (colors defined earlier)
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{blue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/}, % Explicitly define C block comments
+    classoffset=1, % Custom keywords
+    otherkeywords={std, cout, endl, vector, list, iostream, string},
+    keywordstyle=\color{magenta},
+    classoffset=0
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ An Introduction to the Hardware of Your PC}
+\author{A Textbook Chapter Based on Lecture Slides}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    filecolor=magenta,      
+    urlcolor=cyan!70!black,
+    citecolor=green!70!black,
+    pdftitle={Programming Techniques for Scientific Simulations: Hardware},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction: Know Your Tools}
+
+Welcome to the study of programming for scientific simulations. In this field, our primary goal is often to create programs that are not only \emph{correct} but also \emph{fast}. We want to model complex physical phenomena, process vast amounts of data, and get results in a reasonable amount of time.
+
+It is a common temptation for a new programmer to view the computer as a "black box"—a magical device that takes our human-readable code and produces a result. We write our code in a \textbf{high-level language} like C++, Fortran, or Python. These languages are "high-level" because they are abstract and human-friendly, full of concepts we understand like "loops," "objects," and "functions."
+
+However, the computer's "brain," the \textbf{Central Processing Unit (CPU)}, understands none of this. The CPU understands only \textbf{machine language} (or \textbf{machine code}), a stream of raw binary numbers (1s and 0s) that represent the most basic operations possible: "add these two numbers," "move this piece of data," "jump to this other instruction."
+
+This creates a critical gap, which is bridged by a special program called a \textbf{compiler}. The compiler's job is to act as an expert translator, converting your abstract, high-level C++ code into the brutally simple, low-level machine code that your specific CPU can execute.
+
+This leads us to the central theme of this chapter: \textbf{To write a fast program, you must understand your hardware.}
+
+Why? Because the compiler is not magic. It's a tool, and like any tool, it can be used well or poorly. The "smartness" of its translation is heavily influenced by how you write your code. If you write code that is "hardware-aware"—code that "thinks" like the machine—you empower the compiler to produce a lightning-fast translation. If you write code that is "hardware-agnostic," you may unknowingly force the compiler to produce a slow, inefficient translation.
+
+This week, we will get a detailed introduction to the main hardware components of your computer. We will "open the black box." Next week, armed with this knowledge, we will explore specific "optimization" techniques to make our code faster.
+
+\section{The Compilation Pipeline}
+
+The journey from your C++ source code to a runnable program is not a single step but a multi-stage "assembly line" known as the \textbf{compilation pipeline} or "workflow." Understanding this process helps you diagnose problems and understand \emph{where} and \emph{how} optimization can occur.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{placeholder_compilation_workflow_diagram.png}
+    \caption{The C++ compilation pipeline. Your human-readable \texttt{.cpp} file is transformed through several stages—Preprocessing, Compilation, Assembly, and Linking—to create the final \texttt{a.out} executable file that the computer can run.}
+    \label{fig:compilation_workflow}
+\end{figure}
+
+Let's walk through the process shown in Figure \ref{fig:compilation_workflow}, starting with a simple C++ "Hello, World!" program.
+
+\begin{lstlisting}[language=C++, caption={A simple C++ source file, \texttt{hello.cpp}.}, label={lst:hello_cpp}]
+// hello.cpp
+#include <iostream>
+
+int main() {
+    std::cout << "Hello PT1 students!\n";
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{Step 1: The Preprocessor}
+Your \texttt{hello.cpp} file is first given to the \textbf{Preprocessor}. The preprocessor is a simple, text-based tool. It does \emph{not} understand C++ logic. It only follows \textbf{preprocessor directives}—commands that start with a \texttt{\#} symbol.
+
+Its main jobs are:
+\begin{itemize}
+    \item \texttt{\#include}: This command finds the file specified (e.g., \texttt{<iostream>}) and \emph{literally pastes its entire content} into your file.
+    \item \texttt{\#define}: This performs a simple "find and replace." For example, \texttt{\#define PI 3.14} will replace every instance of the text "PI" with "3.14".
+\end{itemize}
+The output is a temporary file (e.g., \texttt{hello.ii}) that is still C++ code, but now "pre-processed" and often massive from all the included headers.
+
+\subsection{Step 2: The Compiler}
+This is the "smart" part of the process. The \textbf{Compiler} takes the "pure" C++ code from the preprocessor (\texttt{hello.ii}) and translates it. It parses your C++ logic, checks for syntax errors, and—this is the important part—\emph{optimizes} your code.
+
+It does \emph{not} translate directly to machine code. It translates to an intermediate, low-level (but still human-readable) language called \textbf{assembly language}. The output is a file like \texttt{hello.s}. We will look at assembly language in detail shortly.
+
+\subsection{Step 3: The Assembler}
+The \textbf{Assembler} is the "dumb" translator. Its job is to perform a simple, one-to-one translation of the assembly code (\texttt{hello.s}) into pure machine code (1s and 0s). It's not "smart" like the compiler; it just follows a lookup table.
+
+The output is an \textbf{object file} (\texttt{hello.o}). This file contains the "raw" machine code for your \texttt{hello.cpp} file, but it's not yet runnable. It's just a "piece" of a program. It doesn't know where the \texttt{iostream} code (which it references) actually \emph{is}.
+
+\subsection{Step 4: The Linker}
+The \textbf{Linker} is the final stage. Its job is to be the "bookbinder." It takes all the object files you compiled (like \texttt{hello.o}) and any \textbf{libraries} you need (like \texttt{libm.a} for math functions or the C++ standard library \texttt{Libgcc.a} for \texttt{iostream}) and "links" them all together.
+
+It resolves all the "I don't know where this is" references. When your \texttt{hello.o} says "call the \texttt{std::cout} function," the linker finds that function in the library and "stitches" your code to it, creating one, single, complete \textbf{executable file} (e.g., \texttt{a.out} by default on Linux/macOS, or \texttt{hello.exe} on Windows). This is the final program you can run.
+
+\section{The Stored-Program Computer Architecture}
+
+To understand hardware limitations, we must first understand the basic blueprint of a modern computer. Almost every computer today, from your phone to a supercomputer, is based on the \textbf{Stored-Program Computer Architecture}, often called the \textbf{Von Neumann Architecture}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_von_neumann_architecture.png}
+    \caption{The basic Stored-Program (Von Neumann) Architecture. The CPU, which contains the Control Unit and ALU, is separate from Memory. All instructions and data must travel over the bus between them.}
+    \label{fig:von_neumann}
+\end{figure}
+
+As shown in Figure \ref{fig:von_neumann}, this design has a few key components:
+\begin{itemize}
+    \item \textbf{CPU (Central Processing Unit):} The "brain" of the computer. It is responsible for executing instructions. It is internally divided into:
+    \begin{itemize}
+        \item \textbf{Control Unit:} The "manager" or "conductor." It fetches instructions from Memory, decodes them, and directs the other components to act.
+        \item \textbf{ALU (Arithmetic Logic Unit):} The "calculator." It performs all mathematical (add, subtract, multiply) and logical (and, or, not, is-equal?) operations.
+    \end{itemize}
+    \item \textbf{Memory (Main Memory, or RAM):} This is the "short-term memory." Crucially, in a stored-program computer, Memory holds \emph{both} the program's instructions \emph{and} the data that program is working on.
+    \item \textbf{Input/Output (I/O):} These are all the peripherals that allow the computer to interact with the world: keyboard, mouse, screen, hard drive, network card, etc.
+\end{itemize}
+
+\subsection{The Von Neumann Bottleneck}
+This design has a fundamental flaw, identified by John von Neumann himself. The CPU is incredibly fast, capable of billions of operations per second. The Main Memory, by comparison, is \emph{very} slow.
+
+The "bus" (the pathway in Figure \ref{fig:von_neumann}) that connects the CPU and Memory is a "narrow bridge." The CPU is constantly "starving," waiting for the slow-moving "trucks" of instructions and data to arrive from Memory.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_von_neumann_bottleneck.png}
+    \caption{The Von Neumann Bottleneck. The single, shared, and relatively slow bus between the high-speed CPU and the lower-speed Memory creates a traffic jam that limits the entire system's performance.}
+    \label{fig:bottleneck}
+\end{figure}
+
+This traffic jam, shown in Figure \ref{fig:bottleneck}, is called the \textbf{Von Neumann Bottleneck}. It is the single biggest problem in high-performance computing. Almost all the complex, clever hardware we are about to discuss—caches, pipelines, branch predictors—are just sophisticated tricks to \emph{hide} this bottleneck.
+
+\section{The CPU's "Language": Instruction Sets}
+
+The \textbf{Instruction Set Architecture (ISA)} is the "vocabulary" of a CPU. It is the complete, low-level list of all the basic, simple commands that the CPU hardware knows how to execute. Every complex program you run—a video game, a web browser, a scientific simulation—is just a combination of \emph{billions} of these incredibly simple, tiny instructions.
+
+To understand this, let's look at a historical example. The EDSAC computer from 1949 had a tiny "Order Code" of only 17 instructions.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{placeholder_edsac_instructions.png}
+    \caption{The "Order Code" (Instruction Set) for the 1949 EDSAC computer. It shows how simple these base operations are: \texttt{A} for Add, \texttt{S} for Subtract, \texttt{T} for Transfer (store) to memory.}
+    \label{fig:edsac}
+\end{figure}
+
+As seen in Figure \ref{fig:edsac}, the instructions are basic:
+\begin{itemize}
+    \item \texttt{An}: \textbf{A}dd the number from memory location \texttt{n} to a special holding spot in the CPU (the "accumulator").
+    \item \texttt{Sn}: \textbf{S}ubtract the number from memory location \texttt{n} from the accumulator.
+    \item \texttt{Tn}: \textbf{T}ransfer (store) the value \emph{from} the accumulator \emph{to} memory location \texttt{n}.
+\end{itemize}
+This shows the fundamental "Load-Operate-Store" model that all computers still use.
+
+\subsection{Machine Code vs. Assembly Language}
+These instructions are processed by the CPU in two forms:
+\begin{enumerate}
+    \item \textbf{Machine Code:} This is the "native language" of the CPU. It's "just numbers"—pure binary. For example, the instruction to "add" might be represented as \texttt{1000101111000011}. This is impossible for humans to read but is what the hardware actually executes. It is \textbf{non-portable}: machine code for an Intel CPU is meaningless to an ARM CPU (in your phone).
+    \item \textbf{Assembly Language:} This is a \textbf{one-to-one translation} of machine code into a human-readable text format. The binary code \texttt{1000101111000011} might be written in assembly as \texttt{add rax, rbx}. It's still low-level and \textbf{non-portable}, but it allows programmers (and compilers) to work with the hardware directly.
+\end{enumerate}
+The "Assembler" (from our pipeline) is just the simple tool that does this one-to-one translation between \texttt{hello.s} and \texttt{hello.o}.
+
+\subsection{Two Philosophies: CISC vs. RISC}
+When designing an ISA, there are two main philosophies:
+
+\textbf{CISC (Complex Instruction Set Computer)}
+\begin{itemize}
+    \item \textbf{Philosophy:} Make the hardware "smart." Include powerful, \textbf{complex} instructions directly in the hardware. For example, a single instruction might calculate a trigonometric \texttt{sin()} or \texttt{cos()} function.
+    \item \textbf{Analogy:} A fancy scientific calculator with hundreds of buttons, including one for \texttt{sin()}.
+    \item \textbf{Pros:} Can make assembly programming "easier," as one instruction does a lot of work.
+    \item \textbf{Cons:} The CPU hardware becomes extremely complex, power-hungry, and difficult to design.
+    \item \textbf{Example:} Intel/AMD x86 processors in your laptop/desktop.
+\end{itemize}
+
+\textbf{RISC (Reduced Instruction Set Computer)}
+\begin{itemize}
+    \item \textbf{Philosophy:} Make the hardware "dumb" but fast. The ISA should only contain a \textbf{reduced} set of very simple, very fast, low-level instructions (like \texttt{load}, \texttt{add}, \texttt{store}).
+    \item \textbf{Analogy:} A simple 4-function calculator. To calculate \texttt{sin()}, you must perform a Taylor series expansion—a \emph{long sequence} of simple adds and multiplies.
+    \item \textbf{Pros:} Hardware is simple, small, and power-efficient. Instructions are fast and easy to "pipeline" (see later).
+    \item \textbf{Cons:} Puts the burden on the \emph{compiler} to be "smart" and combine many simple instructions to achieve a complex task.
+    \item \textbf{Example:} ARM processors (in all phones, tablets, and Apple M-series chips), IBM Power.
+\end{itemize}
+In reality, the lines are now blurry. Modern CISC chips from Intel often translate their "complex" instructions into simple, RISC-like "micro-operations" internally. But the two design philosophies are still fundamental.
+
+\section{Solving the Bottleneck: A Modern CPU}
+
+If the Von Neumann bottleneck (slow memory) is the main problem, how do we solve it? The answer is to \emph{hide} the latency by building a \textbf{Memory Hierarchy}.
+
+\subsection{Caches: A "Mini-Memory" for the CPU}
+The core idea is simple: if Main Memory is slow (like a library across town), we can place a small, \emph{very fast} "mini-memory" right next to the CPU. This is called a \textbf{cache}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_cache_hierarchy_diagram.png}
+    \caption{A simplified diagram of a cache-based microprocessor. Instead of going directly to slow Main Memory, the CPU core first checks the extremely fast L1 and L2 caches.}
+    \label{fig:cache_hierarchy}
+\end{figure}
+
+This creates a "memory hierarchy," which works on an "access" principle:
+\begin{itemize}
+    \item \textbf{Analogy:} Your "desk" (L1 Cache) is tiny but holds the papers you're \emph{currently} working on. Your "bookshelf" (L2 Cache) is bigger but slower; it holds your most-used books. The "library" (Main Memory) is huge but very slow to access.
+    \item \textbf{L1 Cache:} (Level 1) Tiny (e.g., 64 KB) but \emph{extremely} fast (a few CPU cycles). It is often split into an \textbf{L1 instruction cache} (L1i) and an \textbf{L1 data cache} (L1d).
+    \item \textbf{L2 Cache:} (Level 2) Bigger (e.g., 256 KB) and a bit slower, but still very fast.
+    \item \textbf{L3 Cache:} (Level 3) Even bigger (e.g., 8-32 MB) and slower, often shared by all CPU cores.
+\end{itemize}
+When the CPU needs a piece of data, it first asks the L1 cache. If it's there (a \textbf{cache hit}), it's a super-fast operation. If it's not (a \textbf{cache miss}), it asks the L2 cache. If it misses there, it asks the L3. Only if it's not in \emph{any} cache (a "cold miss") does the CPU make the "long, slow" trip to Main Memory.
+
+\subsection{Key Components of a Modern Core}
+If we "zoom in" on a single, modern CPU core, we see it's far more complex than just a "Control Unit + ALU." It's a vast city of specialized hardware, all designed to hide latency and process instructions as fast as possible.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{placeholder_sandy_bridge_core_diagram.png}
+    \caption{A diagram of a single Intel Sandy Bridge CPU core. The complexity (Schedulers, Decoders, Branch Predictors) is all dedicated to processing instructions efficiently and keeping the "Execution Units" (like the ALUs) busy.}
+    \label{fig:sandy_bridge}
+\end{figure}
+
+While Figure \ref{fig:sandy_bridge} is intimidating, we can group this logic into a few key jobs:
+\begin{itemize}
+    \item \textbf{Fetch and Decode Unit:} This is the "manager." It \emph{fetches} instructions from the L1 instruction cache, \emph{decodes} them (figures out what they are), and \emph{dispatches} them to the correct execution units.
+    \item \textbf{Registers:} This is the single most important concept for a programmer to understand. Registers are \emph{not} the L1 cache. They are tiny, named storage spots \emph{directly inside} the ALU and Control Unit. They are the \emph{fastest storage in the entire computer} (sub-cycle access).
+    \item \textbf{The Load-Store Model:} The ALU (the "calculator") \textbf{cannot} operate on data in memory. It can \emph{only} operate on data currently sitting in a register.
+        \begin{itemize}
+            \item \textbf{Analogy:} The ALU is your calculator. Registers are your \emph{fingers} on the calculator's number pads. Memory/Cache is the \emph{piece of paper} with the numbers on it.
+            \item To add \texttt{A+B}, the CPU must execute \emph{multiple} instructions:
+            1.  \texttt{LOAD} A from memory into Register 1. (Read paper, type `A` into calculator).
+            2.  \texttt{LOAD} B from memory into Register 2. (Read paper, type `B` into calculator).
+            3.  \texttt{ADD} Register 1 and Register 2, put result in Register 3. (Press `+` button).
+            4.  \texttt{STORE} result from Register 3 back to memory. (Write calculator result onto paper).
+        \end{itemize}
+    \item \textbf{Execution Units (ALUs, etc.):} These are the "workers" that do the math. Modern CPUs have many of them, including special units for "Floating Point" (decimal) math, to do multiple calculations at once.
+\end{itemize}
+
+\section{From C++ to Assembly: A Practical Look}
+
+Let's see how our C++ code \emph{actually} translates into this Load-Store model. You can (and should!) ask your compiler to show you the assembly it generates. With the \texttt{g++} compiler, you use the \texttt{-S} flag:
+
+\texttt{g++ -O2 -S simpleadd.cpp} \quad \textit{(The \texttt{-O2} enables optimization)}
+
+This will produce a file named \texttt{simpleadd.s}. A great online tool to see this in real-time is the "Compiler Explorer" at \url{godbolt.org}.
+
+\subsection{Example 1: Simple Addition}
+Here is a very simple C++ function.
+
+\begin{lstlisting}[language=C++, caption={A simple function, \texttt{simpleadd.cpp}.}, label={lst:simpleadd_cpp}]
+// simpleadd.cpp
+double add_func(double a, double b) {
+    return a + b;
+}
+\end{lstlisting}
+
+When compiled (with optimizations), the assembly for \texttt{add\_func} will look conceptually like this (this is Intel x86-64 assembly):
+
+\begin{lstlisting}[language={[x86masm]Assembler}, caption={Conceptual assembly for \texttt{simpleadd.cpp}.}, label={lst:simpleadd_s}]
+add_func:
+    ; On entry, 'a' is in register xmm0
+    ; On entry, 'b' is in register xmm1
+    
+    addsd   xmm0, xmm1    ; Add xmm1 to xmm0, store result in xmm0
+    
+    ret                   ; Return (result is in xmm0)
+\end{lstlisting}
+Notice: there is no "load" or "store"! The compiler is smart enough to pass the variables \texttt{a} and \texttt{b} \emph{in registers} (\texttt{xmm0}, \texttt{xmm1}) and return the result \emph{in a register} (\texttt{xmm0}). This is extremely fast.
+
+\subsection{Example 2: A Loop}
+What about a loop?
+\begin{lstlisting}[language=C++, caption={Adding elements of two arrays, \texttt{loopadd.cpp}.}, label={lst:loopadd_cpp}]
+// loopadd.cpp
+void loop_add(double* A, double* B, int n) {
+    for (int i = 0; i < n; ++i) {
+        A[i] = A[i] + B[i];
+    }
+}
+\end{lstlisting}
+
+The conceptual assembly for this is much more complex:
+\begin{lstlisting}[language={[x86masm]Assembler}, caption={Conceptual assembly for \texttt{loopadd.cpp}.}, label={lst:loopadd_s}]
+loop_add:
+    ; On entry: A is in rdi, B is in rsi, n is in edx
+    xor     eax, eax        ; eax = 0 (this is 'i')
+    
+.L3:                          ; This is the 'label' for the loop
+    ; --- Start of loop body ---
+    movsd   xmm0, [rdi + rax*8] ; LOAD A[i] into xmm0
+    movsd   xmm1, [rsi + rax*8] ; LOAD B[i] into xmm1
+    
+    addsd   xmm0, xmm1        ; ADD: xmm0 = xmm0 + xmm1
+    
+    movsd   [rdi + rax*8], xmm0 ; STORE result back into A[i]
+    ; --- End of loop body ---
+    
+    inc     rax               ; i++
+    cmp     rax, rdx          ; Compare 'i' with 'n'
+    jl      .L3               ; JUMP if LESS to .L3 (the loop label)
+    
+    ret                       ; Return
+\end{lstlisting}
+Here, we see the full Load-Operate-Store model, plus the \textbf{jump} instruction (\texttt{jl}) that creates the loop.
+
+\subsection{Compiler Optimization: Loop Unrolling}
+A "smart" compiler might look at that \texttt{loopadd.s} assembly and see a problem. The \texttt{cmp} (compare) and \texttt{jl} (jump) instructions take time. To avoid this overhead, the compiler can "unroll" the loop. If it knows \texttt{n=4}, instead of writing a loop, it might just "paste" the loop body four times:
+
+\begin{lstlisting}[language={[x86masm]Assembler}, caption={A "loop unrolled" version of \texttt{loopadd.s}.}, label={lst:unrolled}]
+; --- Unrolled loop for n=4 ---
+movsd   xmm0, [rdi]         ; A[0]
+movsd   xmm1, [rsi]         ; B[0]
+addsd   xmm0, xmm1
+movsd   [rdi], xmm0         ; Store A[0]
+
+movsd   xmm0, [rdi+8]       ; A[1]
+movsd   xmm1, [rsi+8]       ; B[1]
+addsd   xmm0, xmm1
+movsd   [rdi+8], xmm0       ; Store A[1]
+
+movsd   xmm0, [rdi+16]      ; A[2]
+... etc ...
+\end{lstlisting}
+This is much \emph{longer} code, but it is much \emph{faster} because it contains no "control flow" (jumps or branches), just a straight line of data operations.
+
+\section{Hardware Speed-Tricks: Pipelining \& Prediction}
+
+Modern CPUs use several "assembly line" tricks to execute instructions faster.
+
+\subsection{Pipelining}
+A CPU doesn't process one instruction at a time (start-to-finish). It uses an "assembly line" called a \textbf{pipeline}. A single instruction is broken into stages.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{placeholder_pipelining_diagram.png}
+    \caption{A CPU pipeline compared to a car assembly line. By breaking the task into stages (e.g., Fetch, Decode, Execute, Store) and working on multiple instructions at once, the "throughput" is much higher.}
+    \label{fig:pipeline}
+\end{figure}
+
+For example, a floating-point multiplication might be a 5-stage pipeline (e.g., 1. Decode, 2. Load Registers, 3. Multiply, 4. Normalize, 5. Store Register).
+\begin{itemize}
+    \item \textbf{Latency:} The time for \emph{one} instruction to go through all 5 stages is the \textbf{latency} (e.g., 5 cycles).
+    \item \textbf{Throughput:} But, as soon as Instruction 1 moves to Stage 2, Instruction 2 can \emph{enter} Stage 1. The pipeline is full, and a new result "pops out" of the end on \emph{every cycle}.
+\end{itemize}
+This means that even though one multiplication has a 5-cycle latency, a loop of 1000 multiplications can be completed in (roughly) 1000 + 5 cycles, not 5000. This is called \textbf{Instruction Level Parallelism (ILP)}.
+
+\subsection{The Pipeline's Enemy: Branch Prediction}
+This beautiful pipeline has one major weakness: \textbf{branches} (i.e., \texttt{if} statements and loops).
+
+\textbf{The Problem:} The CPU is at the "Fetch" stage. It needs to know the \emph{next} instruction to "fetch" and put into the pipeline. But it's an \texttt{if} statement. The CPU doesn't know whether to fetch the \texttt{if} block or the \texttt{else} block until the \texttt{if} condition is \emph{executed} (which is 3 stages \emph{later} in the pipeline). The pipeline must "stall" (stop and wait), which is devastatingly slow.
+
+\textbf{The Solution: Branch Prediction}
+The CPU hardware \emph{guesses} which path the branch will take.
+\begin{itemize}
+    \item \textbf{Analogy:} You are a short-order cook. An order for a hamburger comes in. You \emph{predict} (guess) they will also want fries, so you "speculatively" drop a batch of fries in the fryer.
+    \item \textbf{If correct prediction (they want fries):} The fries are ready at the same time as the burger. You look like a genius. The pipeline is full and ran at full speed.
+    \item \textbf{If wrong prediction (they wanted onion rings):} You must \emph{abort} (throw away) the fries, and start the onion rings. This is a "misprediction penalty" and is very slow. The CPU must "flush" its pipeline of all the wrong, speculatively-fetched instructions and restart from the correct branch.
+\end{itemize}
+Modern CPUs are \emph{extremely} good at this (often >95\% accurate). But this implies that code with \emph{unpredictable} branches (e.g., \texttt{if (rand() > 0.5)}) is \emph{much slower} than code with predictable branches (e.g., a loop `for(i=0; i<1000)` where the `i<1000` branch is "true" 999 times and "false" only once).
+
+\section{The End of an Era: Moore's Law}
+
+For 50 years, the computer industry was driven by a trend called \textbf{Moore's Law}. In 1965, Gordon Moore observed that the number of transistors one could fit on a chip was doubling roughly every 18 months.
+
+This had a magical effect: as transistors got smaller, they got \emph{faster} and \emph{cheaper}. For decades, programmers could write lazy, slow code, and a year later, new hardware would "magically" make it run fast.
+
+\textbf{This era is over.}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{placeholder_moores_gap_graph.png}
+    \caption{The "Moore's Gap" or "Power Wall." Transistor counts (red) continue to follow Moore's Law. But Clock Frequency (blue), the "speed" of the chip, \emph{stopped} increasing around 2005. (Data from K. Rupp).}
+    \label{fig:moores_gap}
+\end{figure}
+
+As Figure \ref{fig:moores_gap} shows, we hit a "Power Wall."
+\begin{itemize}
+    \item We are still packing \emph{more transistors} on chips.
+    \item But we \textbf{cannot} make the clock \textbf{frequency} (the "GHz") any faster. Why? \textbf{Power and Heat.} A faster clock "switches" more often, which uses exponentially more power and produces heat we can no longer cool. Your chip would melt.
+\end{itemize}
+
+This is the most important change in computing in 30 years. It means \textbf{software optimization will become more important,} because we can no longer rely on hardware to save us.
+
+\section{The New Solution: Parallelism}
+
+So what are we \emph{doing} with all those extra transistors from Moore's Law, if not increasing clock speed?
+The answer: \textbf{Parallelism}.
+
+Instead of building one \emph{faster} brain (which we can't do), we are using the extra transistors to build \emph{more} brains (cores) on a single chip.
+\begin{itemize}
+    \item \textbf{Old Way:} A single-core 3.8 GHz Pentium 4. (One super-fast, super-hot chef).
+    \item \textbf{New Way:} An 8-core 3.2 GHz Core i7. (Eight slightly-slower, cooler chefs working together).
+\end{itemize}
+This shift to \textbf{multicore} processors means that the \emph{only} way to make your program faster is to \emph{parallelize} it—to break your problem into pieces that can be solved by multiple "chefs" (cores) at the same time.
+
+\subsection{Parallelization 1: SIMD (In a Single Core)}
+The first type of parallelism is \textbf{SIMD (Single Instruction, Multiple Data)}.
+This uses special "vector" or "packed" instructions (with names like MMX, SSE, AVX) that perform the same operation on many values at once.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder_simd_diagram.png}
+    \caption{A SIMD "packed" add instruction. Instead of 4 separate 'add' instructions, a single instruction adds four pairs of numbers simultaneously.}
+    \label{fig:simd}
+\end{figure}
+
+\textbf{Analogy:} A SIMD instruction is like a large rubber stamp (the "instruction") that can stamp 4 documents (the "data") at once, instead of stamping them one-by-one.
+
+This is perfect for scientific code, which often does the same operation on large arrays (like our \texttt{loopadd.cpp} example). A smart compiler will "vectorize" your loop, replacing it with these much faster SIMD instructions.
+
+\subsection{Parallelization 2: MIMD (With Multiple Cores)}
+The second type is \textbf{MIMD (Multiple Instruction, Multiple Data)}. This is what we normally mean by "parallelism." This is our "kitchen" of 8 chefs, who can all be doing \emph{different} things (one chops, one sautés) at the same time. There are two main models for MIMD:
+
+\textbf{1. Shared Memory (Multicore)}
+\begin{itemize}
+    \item \textbf{How it works:} All CPU cores on your chip share access to the \emph{same} main memory.
+    \item \textbf{Analogy:} All chefs share a single, large refrigerator (Memory).
+    \item \textbf{Pros:} Easy to share data. (To give Chef 2 an onion, Chef 1 just puts it on the counter).
+    \item \textbf{Cons:} "Cache Coherency." What if Chef 1 takes the \emph{last} milk, but Chef 2's \emph{local inventory list} (his L1 cache) still says there is milk? This "cache-fighting" is a huge, complex problem.
+\end{itemize}
+
+\textbf{2. Distributed Memory (Cluster)}
+\begin{itemize}
+    \item \textbf{How it works:} A "supercomputer" is just many separate computers (nodes), each with its \emph{own} CPU and \emph{own} private memory, connected by a fast network.
+    \item \textbf{Analogy:} Every chef has their \emph{own} private kitchen and refrigerator.
+    \item \textbf{Pros:} Massively scalable. You can build a "kitchen" with 10,000 chefs.
+    \item \textbf{Cons:} Sharing data is \emph{very} slow. To give Chef 2 an onion, Chef 1 must stop cooking, package the onion, and mail it via a "network" (walkie-talkie and delivery boy). This is called "message passing."
+\end{itemize}
+
+\subsection{Parallelization 3: The GPU (Massive Parallelism)}
+Finally, there is the \textbf{GPU (Graphics Processing Unit)}. A GPU is a form of "parallelism" taken to an extreme.
+\begin{itemize}
+    \item \textbf{Analogy:} A GPU is \emph{not} 8 smart chefs. It is a football stadium with \textbf{thousands} of "dumb" cores (the audience) who can all do \emph{one simple task at the same time} (e.g., "everyone with a red card, hold it up now!").
+    \item \textbf{Use Case:} GPUs are \emph{brilliant} at massively parallel, SIMD-like tasks (graphics, machine learning, simple physics). They are \emph{terrible} at complex, "branchy" (lots of \texttt{if}s) logic, which is what CPUs are good at.
+\end{itemize}
+
+\section{The Memory Hierarchy in Detail}
+
+We must understand the memory hierarchy, as it is the source of most performance bottlenecks. The key principle is: \textbf{As you get closer to the CPU, storage gets faster, smaller, and more expensive (per-byte).}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{placeholder_memory_pyramid.png}
+    \caption{The Memory Hierarchy. Access times are orders of magnitude different. A 'cache miss' that goes to Main Memory can cost the CPU hundreds of cycles it could have spent doing work. A 'miss' that goes to disk costs \emph{millions} of cycles.}
+    \label{fig:memory_pyramid}
+\end{figure}
+
+The "latency" (access time) numbers in Figure \ref{fig:memory_pyramid} are critical.
+\begin{itemize}
+    \item \textbf{SRAM} (Static RAM): Used in \textbf{Caches (L1-L3)}. It's made of 6 transistors (a "flip-flop").
+        \begin{itemize}
+            \item \textbf{Analogy:} A light switch. It "statically" holds its value (0 or 1) as long as it has power.
+            \item \textbf{Pros/Cons:} Very fast, but big and expensive (6 transistors per bit).
+        \end{itemize}
+    \item \textbf{DRAM} (Dynamic RAM): Used in \textbf{Main Memory (RAM)}. It's made of 1 transistor + 1 capacitor.
+        \begin{itemize}
+            \item \textbf{Analogy:} A tiny, leaky bucket. A full bucket is a '1'. Because it "leaks," the computer must "dynamically" run a "refresh circuit" to refill all the buckets, thousands of times per second.
+            \item \textbf{Pros/Cons:} Very dense and cheap (1 transistor per bit), but slower (due to leaks and refresh).
+        \end{itemize}
+\end{itemize}
+This technology difference is \emph{why} we have the hierarchy. We can't afford to make our whole RAM out of fast SRAM.
+
+\subsection{Why Caches Work: The Principle of Locality}
+Caches are effective because programs are predictable.
+\begin{enumerate}
+    \item \textbf{Temporal Locality (Locality in Time):} If you access a piece of data, you are very likely to access it \emph{again} soon. (e.g., the variable \texttt{sum} inside a loop).
+    \item \textbf{Spatial Locality (Locality in Space):} If you access a piece of data, you are very likely to access the data \emph{right next to it} soon. (e.g., \texttt{A[0]}, then \texttt{A[1]}, then \texttt{A[2]}...).
+\end{enumerate}
+
+\subsection{Cache Lines: The Key to Spatial Locality}
+To exploit spatial locality, the memory system does \emph{not} move data 1 byte at a time. It moves data in 64-byte "chunks" called \textbf{cache lines}.
+\begin{itemize}
+    \item When your code asks for \texttt{A[0]} (a \textbf{cache miss})...
+    \item The CPU goes to Main Memory and fetches the \emph{entire 64-byte cache line} that contains \texttt{A[0]}. This chunk also contains \texttt{A[1]} through \texttt{A[7]} (assuming \texttt{double}s are 8 bytes).
+    \item This chunk is placed in the L1 cache.
+    \item When your code \emph{then} asks for \texttt{A[1]}, it's an L1 \textbf{cache hit}.
+    \item ...When you ask for \texttt{A[2]}, \texttt{A[3]}... \texttt{A[7]}, they are \emph{all} L1 cache hits.
+\end{itemize}
+This means iterating through a contiguous array (\texttt{std::vector}) is \textbf{extremely fast}.
+
+\subsection{A Parallel Bug: False Sharing}
+This cache line system creates a subtle but terrible bug in parallel programs: \textbf{False Sharing}.
+\begin{itemize}
+    \item \textbf{Analogy:} Two chefs, Core 1 and Core 2. Chef 1 needs \texttt{salt}. Chef 2 needs \texttt{pepper}. These are \emph{unrelated} variables.
+    \item \textbf{The Problem:} You "saved space" by putting \texttt{salt} and \texttt{pepper} in the \emph{same spice caddy} (the 64-byte cache line).
+    \item \textbf{The Bug:}
+    1.  Core 1 needs \texttt{salt}. It "loads" the whole caddy into its L1 cache.
+    2.  Core 2 needs \texttt{pepper}. It "loads" the whole caddy into \emph{its} L1 cache. This "invalidates" Core 1's copy.
+    3.  Core 1 needs \texttt{salt} again. It \emph{steals} the caddy back, invalidating Core 2's copy.
+    4.  Core 2 needs \texttt{pepper} again. It \emph{steals} the caddy back...
+    \item \textbf{Result:} The two cores spend all their time "ping-ponging" the cache line over the bus, even though they aren't sharing \emph{any} data. This is "false" sharing. The program runs 100x slower than it should.
+    \item \textbf{Solution:} "Pad" your data structure (add empty space) to ensure \texttt{salt} and \texttt{pepper} are on \emph{different} cache lines.
+\end{itemize}
+
+\section{Beyond Physical RAM: Virtual Memory}
+
+What happens when your 32 GB simulation needs to run on your 8 GB laptop? The program crashes, right? No. This is solved by \textbf{Virtual Memory}.
+
+The key idea is to use the (slow) \textbf{disk} as "overflow" for RAM. The operating system (OS) and CPU hardware (the \textbf{MMU - Memory Management Unit}) trick your program.
+\begin{itemize}
+    \item \textbf{Virtual Address Space (VAS):} Your program \emph{thinks} it has a private, massive, contiguous block of memory (e.g., 256 Terabytes on a 64-bit system). This is the "virtual" view.
+    \item \textbf{Physical Address Space (PAS):} The \emph{actual}, small, 8GB of RAM chips, which is shared by all running programs.
+\end{itemize}
+The OS and MMU manage this "illusion" by breaking memory into "pages."
+
+\subsection{Pages, Page Tables, and the TLB}
+\begin{itemize}
+    \item \textbf{Pages:} Memory is managed in 4KB "pages."
+    \item \textbf{Page Table:} The OS keeps a "map" called the \textbf{Page Table} for your program. This map translates virtual pages to physical pages.
+        \begin{itemize}
+            \item \texttt{Virtual Page 1 -> Physical Page 5 (in RAM)}
+            \item \texttt{Virtual Page 2 -> Physical Page 2 (in RAM)}
+            \item \texttt{Virtual Page 3 -> (On Disk at location X)}
+        \end{itemize}
+    \item \textbf{Page Fault:} When your program tries to access \texttt{Virtual Page 3}, the MMU checks the page table and sees it's "on disk." This triggers a \textbf{page fault}, which is \emph{extremely} slow. The OS must:
+    1.  Pause your program.
+    2.  Find an "old" page in RAM (e.g., \texttt{Virtual Page 2}).
+    3.  Write that page out to disk (if it was changed).
+    4.  Read \texttt{Virtual Page 3} from disk into that now-empty spot in RAM.
+    5.  Update the page table: (\texttt{VP2 -> On Disk}, \texttt{VP3 -> Physical Page 2}).
+    6.  Resume your program.
+    \item \textbf{The TLB (Translation Lookaside Buffer):} This creates a new problem. The Page Table is \emph{itself} in RAM! This means \emph{every} memory access (e.g., \texttt{LOAD A[i]}) would require \emph{two} memory accesses: one to read the page table, and one to read \texttt{A[i]}. This would cut performance in half.
+    \item \textbf{Solution:} The MMU contains a small, fast \emph{cache for the page table}, called the \textbf{TLB}. It stores recent translations (e.g., \texttt{VP1 -> PP5}). This is another example of temporal locality!
+\end{itemize}
+
+\section{Putting It All Together: A Case Study}
+
+This all seems very abstract. How does it affect our C++ code?
+
+\textbf{Problem:} In our "Penna model" simulation, we need to store a large collection of "animals." We need to iterate over all animals every "turn," and we need to "remove" animals from the collection when they die.
+
+What is the best C++ data structure? \texttt{std::vector} or \texttt{std::list}?
+
+\subsection{The "Textbook" Answer: \texttt{std::list}}
+A "by-the-book" CS student might argue for \texttt{std::list}.
+\begin{itemize}
+    \item \textbf{How it works:} A "linked list" stores each animal in a separate, small block of memory, which also contains "pointers" to the \texttt{next} and \texttt{previous} animals.
+    \item \textbf{Memory Layout:} The animals are scattered \emph{all over RAM}.
+    \item \textbf{Pro:} Removing an animal from the middle is O(1) (very fast), \emph{if} you already have an iterator to it. You just re-wire the \texttt{next}/\texttt{prev} pointers of its neighbors.
+\end{itemize}
+
+\subsection{The "Hardware-Aware" Answer: \texttt{std::vector}}
+A \texttt{std::vector} seems like a bad choice.
+\begin{itemize}
+    \item \textbf{How it works:} A single, contiguous block of memory.
+    \item \textbf{Memory Layout:} All animals are side-by-side in RAM: \texttt{A[0], A[1], A[2]...}.
+    \item \textbf{Con:} Removing an animal from the middle is O(N) (very slow). You have to "shift" \emph{all} subsequent animals (\texttt{A[i+1]}, \texttt{A[i+2]}...) down by one to fill the "gap."
+\end{itemize}
+
+\subsection{The Surprising Winner: \texttt{std::vector}}
+In almost all real-world tests, the \texttt{std::vector} is \emph{dramatically} faster. Why?
+
+\textbf{Reason 1: Caches!}
+\begin{itemize}
+    \item \textbf{Iterating a \texttt{std::vector}:} This is a \emph{perfect} example of \textbf{Spatial Locality}. When you iterate to "process" all the animals, you access \texttt{A[0]}. The CPU fetches the \emph{entire cache line}, loading \texttt{A[1]...A[7]} into the L1 cache "for free." The entire loop is a blazing-fast series of L1 hits.
+    \item \textbf{Iterating a \texttt{std::list}:} This is a \emph{cache nightmare}. It's called \textbf{pointer chasing}. You access \texttt{A[0]}. To get to the next animal, you follow a pointer, which could be \emph{anywhere} in RAM. This is a \textbf{cache miss}. The CPU stalls. Once it (slowly) arrives, you process it and follow its \texttt{next} pointer... to another random location. Another \textbf{cache miss}.
+\end{itemize}
+The \texttt{std::list} iteration spends 99\% of its time stalled on the Von Neumann bottleneck, while the \texttt{std::vector} screams along at L1 cache speed.
+
+\textbf{Reason 2: A Better Removal Algorithm}
+The "slow" O(N) removal of \texttt{std::vector} was based on a false assumption: that we need to \emph{preserve the order} of the animals. The problem (slide 45) states: "We do not care about the order of the animals."
+
+This allows for a \emph{brilliant} O(1) removal trick for a \texttt{std::vector}:
+\begin{lstlisting}[language=C++, caption={A fast O(1) "swap-and-pop" removal for \texttt{std::vector}.}, label={lst:swap_pop}]
+// To remove the animal at 'index_to_remove' from 'animal_vector'
+
+// 1. Take the \emph{last} animal in the vector...
+animal_vector[index_to_remove] = animal_vector.back();
+
+// 2. ...and pop off the (now redundant) last element.
+animal_vector.pop_back();
+
+// Done. O(1) time. No shifting.
+\end{lstlisting}
+
+\textbf{Conclusion:}
+The \texttt{std::vector} (with the "swap-and-pop" trick) is O(1) for removal \emph{and} is perfectly cache-friendly for iteration. The \texttt{std::list} is O(1) for removal but is \emph{disastrous} for the cache during iteration.
+
+The "hardware-aware" \texttt{std::vector} solution wins, and it's not even close. This is the perfect example of why we must "Know Your Tools."
+
+\section{Further Reading}
+For a much deeper dive on these topics, please see the following excellent (and very dense) textbooks:
+\begin{itemize}
+    \item Bryant \& O'Hallaron, "Computer Systems: A Programmer's Perspective", 2016.
+    \item Hennessy \& Patterson, "Computer Architecture: A Quantitative Approach", 2011.
+\end{itemize}
+
+\end{document}

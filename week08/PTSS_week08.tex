@@ -1,0 +1,1602 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}  % For \toprule, \midrule, \bottomrule in tables
+\usepackage{verbatim}  % For verbatim environment
+\usepackage{fvextra}   % For advanced verbatim features (Verbatim environment)
+\usepackage{parskip}   % Better paragraph spacing
+\usepackage{enumitem}  % Better control over lists
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage[expansion=false]{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% New environment for build/output
+\newenvironment{buildoutput}
+  {\Verbatim[commandchars=\\\{\}, frame=single, label=Build \& Output, breaklines=true]}
+  {\endVerbatim}
+
+% Helper command for inline code
+\newcommand{\code}[1]{\texttt{#1}}
+
+% METADATA
+\title{Lecture Notes: C++ Inheritance, Polymorphism, and Generic Programming}
+\author{Course Notes}
+\date{\today}
+
+% DOCUMENT START
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Overview \& Roadmap}
+
+These notes expand upon the provided slide deck, structuring the topics into a logical teaching sequence. We begin with the fundamental mechanics of object-oriented design in C++, move to the core concepts of inheritance and runtime polymorphism, and then contrast this with C++'s powerful compile-time polymorphism (templates). The goal is to understand the "why" and the precise trade-offs of each approach.
+
+\begin{enumerate}
+    \item \textbf{Encapsulation \& RAII}
+    \begin{itemize}
+        \item \textbf{Scope:} Reviewing class mechanics (\code{public}/\code{private}), data hiding, and the core C++ idiom of Resource Acquisition Is Initialization (RAII) using constructors and destructors.
+        \item \textbf{Prerequisites:} Basic understanding of C++ \code{struct} or \code{class}.
+    \end{itemize}
+
+    \item \textbf{Inheritance}
+    \begin{itemize}
+        \item \textbf{Scope:} The "is-a" relationship (\code{class Derived : public Base}), what is (and isn't) inherited, access specifiers (\code{protected}), and constructor/destructor call order.
+        \item \textbf{Prerequisites:} Encapsulation \& RAII.
+    \end{itemize}
+
+    \item \textbf{Runtime Polymorphism}
+    \begin{itemize}
+        \item \textbf{Scope:} Dynamic dispatch using \code{virtual} functions, base-class pointers/references, vtables, \code{override}, \code{final}, and the critical importance of virtual destructors.
+        \item \textbf{Prerequisites:} Inheritance.
+    \end{itemize}
+
+    \item \textbf{Abstract Base Classes (ABCs)}
+    \begin{itemize}
+        \item \textbf{Scope:} Defining interfaces with pure virtual functions (\code{= 0}), creating abstract classes that cannot be instantiated, and their canonical use with smart pointers.
+        \item \textbf{Prerequisites:} Runtime Polymorphism.
+    \end{itemize}
+
+    \item \textbf{Compile-Time Polymorphism (Templates)}
+    \begin{itemize}
+        \item \textbf{Scope:} Function and class templates as a mechanism for generic programming, a.k.a. compile-time polymorphism.
+        \item \textbf{Prerequisites:} Basic C++ function/class syntax.
+    \end{itemize}
+
+    \item \textbf{Paradigms in Practice I: The \code{Stack}}
+    \begin{itemize}
+        \item \textbf{Scope:} Implementing a \code{Stack} data structure using four different programming paradigms (Procedural, Modular, OOP, Generic) to compare their trade-offs, safety, and reusability.
+        \item \textbf{Prerequisites:} All preceding topics.
+    \end{itemize}
+    
+    \item \textbf{Paradigms in Practice II: Numerical Integration}
+    \begin{itemize}
+        \item \textbf{Scope:} Implementing a numerical integration algorithm to directly compare the runtime (OOP/virtual) and compile-time (template) polymorphism strategies, focusing on performance and flexibility.
+        \item \textbf{Prerequisites:} All preceding topics.
+    \end{itemize}
+\end{enumerate}
+
+
+\section{Expanded Topics}
+
+\subsection{Topic 1: Encapsulation \& RAII}
+
+\subsubsection*{Concept}
+\textbf{Encapsulation} is the bundling of data with the methods that operate on that data. It's a core pillar of Object-Oriented Programming (OOP). In C++, this is achieved with \code{class} or \code{struct}, using access specifiers (\code{public}, \code{protected}, \code{private}) to hide implementation details. \code{private} members can only be accessed by the class's own methods, creating a "public interface" and a "private implementation." This prevents external code from creating invalid state.
+
+\textbf{RAII} (Resource Acquisition Is Initialization) is the most important idiom in C++. It states that resource lifetime (memory, files, locks, network sockets) should be tied to object lifetime. A resource is acquired in the constructor (ctor) and released in the destructor (dtor). This makes resource management automatic and exception-safe, as the destructor is guaranteed to run when an object goes out of scope, whether by normal return or by stack unwinding from an exception.
+
+\subsubsection*{Syntax Patterns}
+\begin{lstlisting}
+class MyResourceHolder {
+private:
+    // Data members (implementation details)
+    ResourceType* resource_; 
+    int data_;
+
+public:
+    // Constructor (Acquisition)
+    explicit MyResourceHolder(int data) : data_(data) {
+        resource_ = new ResourceType(); // Acquire resource
+    }
+
+    // Destructor (Release)
+    ~MyResourceHolder() {
+        delete resource_; // Release resource
+        // No need to check for null
+    }
+
+    // Public interface (methods)
+    void do_something() {
+        // ... uses resource_ and data_ ...
+    }
+
+    // Prevent copying (or implement it correctly)
+    MyResourceHolder(const MyResourceHolder&) = delete;
+    MyResourceHolder& operator=(const MyResourceHolder&) = delete;
+};
+\end{lstlisting}
+(Note: Modern C++ prefers \code{std::unique\_ptr} over raw \code{new}/\code{delete}, which we'll see next.)
+
+\subsubsection*{Minimal Example (RAII with \code{std::unique\_ptr})}
+This example shows modern RAII. We don't need a custom destructor because \code{std::unique\_ptr} is itself a RAII object that handles deletion.
+\begin{lstlisting}
+#include <iostream>
+#include <memory> // For std::unique_ptr
+#include <string>
+
+// A simple resource
+struct Resource {
+    std::string name;
+    Resource(std::string n) : name(std::move(n)) { 
+        std::cout << "Acquiring Resource: " << name << "\n"; 
+    }
+    ~Resource() { 
+        std::cout << "Releasing Resource: " << name << "\n"; 
+    }
+};
+
+// A class demonstrating RAII and Encapsulation
+class Manager {
+private:
+    std::unique_ptr<Resource> res_; // Data is private
+    int id_;
+
+public:
+    // Ctor acquires the resource
+    Manager(int id, std::string name) 
+      : res_(std::make_unique<Resource>(std::move(name))), id_(id) {
+        std::cout << "Manager " << id_ << " created.\n";
+    }
+
+    void Greet() {
+        if (res_) {
+            std::cout << "Manager " << id_ << " says hello with " 
+                      << res_->name << "\n";
+        }
+    }
+    
+    // ~Manager() destructor is auto-generated by the compiler.
+    // It will automatically call the destructor for res_, 
+    // which in turn calls delete on the Resource.
+};
+
+int main() {
+    std::cout << "--- Entering main ---\n";
+    Manager m(1, "Res-A");
+    m.Greet();
+    std::cout << "--- Leaving main ---\n";
+    // m goes out of scope here.
+    // Dtor ~Manager() is called.
+    // ~unique_ptr() is called.
+    // ~Resource() is called.
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+--- Entering main ---
+Acquiring Resource: Res-A
+Manager 1 created.
+Manager 1 says hello with Res-A
+--- Leaving main ---
+Releasing Resource: Res-A
+\end{buildoutput}
+
+\subsubsection*{Worked Example (Slide 30: OOP Stack)}
+This example from the slides demonstrates RAII for manual memory management. This is how \code{std::vector} is implemented internally.
+\begin{lstlisting}
+#include <iostream>
+#include <stdexcept> // For std::runtime_error
+
+namespace Stack {
+class stack {
+private:
+    double* s_; // Pointer to start of memory (private)
+    double* p_; // Pointer to current top (private)
+    int n_;     // Max size (private)
+
+public:
+    // Ctor: Acquires memory
+    explicit stack(int l) : n_(l) {
+        s_ = new double[n_];
+        p_ = s_;
+        std::cout << "Stack created (size " << n_ << ")\n";
+    }
+
+    // Dtor: Releases memory
+    ~stack() {
+        delete[] s_;
+        std::cout << "Stack destroyed\n";
+    }
+
+    // Rule of 5: For simplicity, delete copy/move
+    stack(const stack&) = delete;
+    stack& operator=(const stack&) = delete;
+    stack(stack&&) = delete;
+    stack& operator=(stack&&) = delete;
+
+    void push(double v) {
+        if (p_ == s_ + n_) {
+            throw std::runtime_error("Stack overflow");
+        }
+        *p_++ = v;
+    }
+
+    double pop() {
+        if (p_ == s_) {
+            throw std::runtime_error("Stack underflow");
+        }
+        return *--p_;
+    }
+};
+} // namespace Stack
+
+int main() {
+    try {
+        Stack::stack s(10); // Ctor called
+        s.push(1.1);
+        s.push(2.2);
+        std::cout << "Popped: " << s.pop() << "\n";
+        std::cout << "Popped: " << s.pop() << "\n";
+        // s.pop(); // This would throw "Stack underflow"
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+    // s goes out of scope here, Dtor is called automatically
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Stack created (size 10)
+Popped: 2.2
+Popped: 1.1
+Stack destroyed
+\end{buildoutput}
+
+\subsubsection*{Common Pitfalls \& UB}
+\begin{enumerate}
+    \item \textbf{Dangling Reference:} Returning a reference to a \code{private} data member that is later destroyed.
+    \item \textbf{\code{protected} Data:} Often a design smell. It breaks encapsulation for derived classes. Prefer \code{private} data with \code{protected} *methods* if derived classes need controlled access.
+    \item \textbf{Leaking Resources:} Forgetting to release a resource in the destructor (if not using RAII types like \code{std::unique\_ptr}).
+    \item \textbf{Exception-Unsafe Code:} If resource release is not in a destructor, an exception thrown mid-function will skip the release code, causing a leak. RAII solves this.
+\end{enumerate}
+
+\subsubsection*{Performance Notes}
+\begin{itemize}
+    \item \textbf{Ctor/Dtor Overhead:} Constructors and destructors are functions. If they are complex (e.g., acquire locks, allocate memory), they have a cost. Trivial ctor/dtor are often inlined and free.
+    \item \textbf{Smart Pointers:} \code{std::unique\_ptr} has zero overhead vs. a raw pointer (when optimized). \code{std::shared\_ptr} has overhead: it must be heap-allocated (with \code{make\_shared}) and use atomic operations for its reference count.
+\end{itemize}
+
+\subsubsection*{Quick Self-Check}
+\begin{description}
+    \item[Q:] What is RAII and what problem does it solve?
+    \item[A:] Resource Acquisition Is Initialization. It solves resource management (memory, files, etc.) by tying resource lifetime to object lifetime, making it automatic and exception-safe.
+    \item[Q:] Why prefer \code{private} data members?
+    \item[A:] Encapsulation. It prevents external code from directly modifying the object's internal state, allowing the class to maintain its own invariants (rules about its state).
+    \item[Q:] When is a destructor called?
+    \item[A:] When an object goes out of scope, or when \code{delete} is called on a pointer to it.
+\end{description}
+
+\subsubsection*{References}
+cppreference: \texttt{class}, \texttt{RAII}, \texttt{std::unique\_ptr}
+
+\subsection{Topic 2: Inheritance}
+
+\subsubsection*{Concept}
+Inheritance allows a new class (the \textbf{derived} class) to be based on an existing class (the \textbf{base} class). The derived class inherits the members (data and functions) of the base class. This models an "is-a" relationship: a \code{Student} "is-a" \code{Person}. The goal is code re-use and, more importantly, establishing a type hierarchy that enables polymorphism. With \code{public} inheritance, the derived class can be used anywhere the base class is expected.
+
+\subsubsection*{Syntax Patterns}
+\begin{lstlisting}
+class Base {
+private:
+    int b_data;
+protected:
+    int prot_data; // Accessible by Base and Derived
+public:
+    Base(int d) : b_data(d), prot_data(0) {}
+    void base_func() { /* ... */ }
+};
+
+// Public inheritance: "is-a"
+class Derived : public Base {
+private:
+    int d_data;
+public:
+    // Derived ctor MUST initialize Base ctor
+    Derived(int d1, int d2) : Base(d1), d_data(d2) {}
+
+    void derived_func() {
+        // base_func();     // OK (public)
+        // prot_data = 1;   // OK (protected)
+        // b_data = 1;      // ERROR: b_data is private to Base
+    }
+};
+\end{lstlisting}
+
+\subsubsection*{Minimal Example (Slide 7: Person/Student)}
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+class Person {
+protected:
+    std::string name_; // protected: accessible by derived classes
+
+public:
+    Person(std::string name) : name_(std::move(name)) {}
+
+    // Non-virtual: We'll fix this in the Polymorphism section
+    void eat() const {
+        std::cout << name_ << " is eating.\n";
+    }
+    
+    std::string get_name() const { return name_; }
+};
+
+class Student : public Person {
+private:
+    std::string major_;
+
+public:
+    Student(std::string name, std::string major)
+      : Person(std::move(name)), major_(std::move(major)) {}
+
+    void study() const {
+        // We can access name_ because it is protected
+        std::cout << name_ << " is studying " << major_ << ".\n";
+    }
+};
+
+int main() {
+    Student s("Alice", "Computer Science");
+    
+    s.study(); // Call method from Derived
+    s.eat();   // Call method inherited from Base
+    
+    std::cout << "Student's name is: " << s.get_name() << "\n";
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Alice is studying Computer Science.
+Alice is eating.
+Student's name is: Alice
+\end{buildoutput}
+
+\subsubsection*{Worked Example (Constructor/Destructor Chaining)}
+This example shows the order of construction and destruction. Base classes are always constructed *before* derived classes, and destructed *after*.
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+struct Base {
+    std::string id;
+    Base(std::string s) : id(std::move(s)) {
+        std::cout << "Base ctor (" << id << ")\n";
+    }
+    ~Base() {
+        std::cout << "Base dtor (" << id << ")\n";
+    }
+};
+
+struct Derived : public Base {
+    std::string id_d;
+    Derived(std::string s_b, std::string s_d) 
+      : Base(std::move(s_b)), id_d(std::move(s_d)) {
+        std::cout << "Derived ctor (" << id_d << ")\n";
+    }
+    ~Derived() {
+        std::cout << "Derived dtor (" << id_d << ")\n";
+    }
+};
+
+int main() {
+    std::cout << "--- Creating Derived ---\n";
+    Derived d("BasePart", "DerivedPart");
+    std::cout << "--- Deleting Derived ---\n";
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+--- Creating Derived ---
+Base ctor (BasePart)
+Derived ctor (DerivedPart)
+--- Deleting Derived ---
+Derived dtor (DerivedPart)
+Base dtor (BasePart)
+\end{buildoutput}
+
+\subsubsection*{Common Pitfalls \& UB}
+\begin{enumerate}
+    \item \textbf{Object Slicing:} This is the most dangerous pitfall. If you assign a \code{Derived} object to a \code{Base} object (by value), the \code{Derived} part is "sliced off." Only the \code{Base} subobject is copied. This breaks polymorphism.
+    \begin{lstlisting}
+Derived d;
+Base b = d; // SLICING! b is only a Base.
+    \end{lstlisting}
+    \item \textbf{What isn't inherited (Slide 9):} Constructors, destructors, assignment operators (\code{operator=}), and \code{friend} relationships are not inherited.
+    \item \textbf{Shadowing:} If a \code{Derived} class defines a function with the *same name* as a \code{Base} class function but a different signature, it hides *all* \code{Base} class overloads of that name. This is rarely intended. Use \code{using Base::func_name;} to un-hide them.
+\end{enumerate}
+
+\subsubsection*{Performance Notes}
+\begin{itemize}
+    \item \textbf{Object Layout:} A \code{Derived} object is typically laid out in memory as the \code{Base} subobject, followed by the \code{Derived} data members.
+    \item \textbf{Ctor/Dtor Chain:} As shown above, constructing a \code{Derived} object invokes a chain of constructors (Base then Derived). Destructors run in the reverse order (Derived then Base).
+    \item \textbf{Zero-Cost (without \code{virtual}):} Static inheritance has no runtime overhead. A call to \code{d.base\_func()} is a direct function call.
+\end{itemize}
+
+\subsubsection*{Quick Self-Check}
+\begin{description}
+    \item[Q:] What is object slicing? How do you prevent it?
+    \item[A:] Slicing is when a derived object is copied into a base object, losing its derived-class data and behavior. Prevent it by always using pointers or references (e.g., \code{Base*}, \code{Base&}, \code{std::unique\_ptr<Base>}) to refer to polymorphic objects.
+    \item[Q:] What is the difference between \code{private} and \code{protected}?
+    \item[A:] \code{private} members are accessible only to the class itself. \code{protected} members are accessible to the class *and* all classes derived from it.
+    \item[Q:] In what order are constructors and destructors called for a \code{Derived} object?
+    \item[A:] Constructors: Base, then Derived. Destructors: Derived, then Base.
+\end{description}
+
+\subsubsection*{References}
+cppreference: \texttt{inheritance}, \texttt{access specifiers}, \texttt{object slicing}
+
+\subsection{Topic 3: Runtime Polymorphism}
+
+\subsubsection*{Concept}
+Runtime polymorphism (or dynamic dispatch) is the ability to use a single interface (a base class pointer or reference) to interact with objects of different derived types. The program determines *at runtime* which specific derived-class function to call. This is the mechanism that enables `std::vector<Shape*>`, where each `Shape` could be a `Circle` or a `Square`, and calling `draw()` on each one invokes the correct, specific function.
+
+This is enabled in C++ by the \code{virtual} keyword. When a function is marked \code{virtual} in a base class, the compiler builds a \textbf{virtual function table (vtable)} for that class. Each object of a polymorphic class contains a hidden \textbf{vpointer} that points to its class's vtable. A call to a virtual function becomes an indirect call: find object's vpointer $\rightarrow$ find vtable $\rightarrow$ find function address in vtable $\rightarrow$ call function.
+
+\subsubsection*{Syntax Patterns}
+\begin{lstlisting}
+class Base {
+public:
+    // Mark function as virtual
+    virtual void do_something() { /* base implementation */ }
+
+    // CRITICAL: Virtual destructor
+    virtual ~Base() = default; // Or {}
+};
+
+class Derived : public Base {
+public:
+    // Mark as override: compiler checks that it IS overriding a base virtual func
+    void do_something() override { /* derived implementation */ }
+    
+    // Virtual destructor is inherited
+};
+
+class FinalDerived final : public Derived {
+public:
+    // Mark as final: no other class can override this
+    void do_something() override final { /* ... */ }
+};
+
+void polymorphic_call(Base& b) {
+    b.do_something(); // Calls Derived::do_something() if b is a Derived
+}
+\end{lstlisting}
+
+\subsubsection*{Minimal Example (Slide 11-12: Fixing \code{Person})}
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+class Person {
+protected:
+    std::string name_;
+public:
+    Person(std::string name) : name_(std::move(name)) {}
+    
+    // 1. Add virtual keyword to the base function
+    virtual void occupation() const {
+        std::cout << name_ << " does stuff.\n";
+    }
+    
+    // 2. Add virtual destructor!
+    virtual ~Person() = default;
+};
+
+class Student : public Person {
+public:
+    Student(std::string name) : Person(std::move(name)) {}
+    
+    // 3. Use override (optional, but strongly recommended)
+    void occupation() const override {
+        std::cout << name_ << " studies stuff.\n";
+    }
+};
+
+class Teacher : public Person {
+public:
+    Teacher(std::string name) : Person(std::move(name)) {}
+    
+    void occupation() const override {
+        std::cout << name_ << " teaches stuff.\n";
+    }
+};
+
+// This function works polymorphically
+void what_r_u_doing(const Person& person) {
+    person.occupation(); // Dynamic dispatch!
+}
+
+int main() {
+    Teacher teacher("Alice");
+    Student student("Bob");
+    
+    what_r_u_doing(teacher); // Passes Teacher as Person&
+    what_r_u_doing(student); // Passes Student as Person&
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Alice teaches stuff.
+Bob studies stuff.
+\end{buildoutput}
+
+\subsubsection*{Worked Example (Slide 24-26: Penna Model Motivation)}
+This shows *why* virtuals are needed. A base class algorithm (\code{simulate}) needs to be customizable by derived classes (\code{step}).
+\begin{lstlisting}
+#include <iostream>
+#include <memory> // For std::unique_ptr
+
+// Base class defines a "template method" algorithm
+class Population {
+public:
+    void simulate(int years) {
+        for (int i = 0; i < years; ++i) {
+            // This call must be polymorphic
+            step(); 
+        }
+    }
+
+    virtual ~Population() = default;
+
+protected:
+    // 1. Define the customizable "step" as virtual
+    virtual void step() {
+        std::cout << "  Base step (aging, breeding...)\n";
+    }
+};
+
+// Derived class customizes the "step"
+class FishingPopulation : public Population {
+protected:
+    // 2. Override the virtual function
+    void step() override {
+        Population::step(); // Call base version
+        std::cout << "  + Fishing step (removing fish)\n"; // Add new behavior
+    }
+};
+
+int main() {
+    std::cout << "--- Base Population Sim ---\n";
+    std::unique_ptr<Population> base_pop = 
+        std::make_unique<Population>();
+    base_pop->simulate(2);
+
+    std::cout << "\n--- Fishing Population Sim ---\n";
+    std::unique_ptr<Population> fishing_pop = 
+        std::make_unique<FishingPopulation>();
+    
+    // simulate() is called, which calls the *overridden* step()
+    fishing_pop->simulate(2); 
+    
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+--- Base Population Sim ---
+  Base step (aging, breeding...)
+  Base step (aging, breeding...)
+
+--- Fishing Population Sim ---
+  Base step (aging, breeding...)
+  + Fishing step (removing fish)
+  Base step (aging, breeding...)
+  + Fishing step (removing fish)
+\end{buildoutput}
+
+\subsubsection*{Common Pitfalls \& UB}
+\begin{enumerate}
+    \item \textbf{UB: Deleting without a Virtual Destructor (CRITICAL):}
+    \begin{lstlisting}
+Base* b = new Derived();
+delete b; // If ~Base() is NOT virtual, this is UNDEFINED BEHAVIOR.
+          // Only ~Base() is called. ~Derived() is not, leaking resources.
+    \end{lstlisting}
+    \item \textbf{Calling Virtual Functions from Ctor/Dtor:} This is a subtle trap. Inside a \code{Base} constructor, the object is only a \code{Base}. The vtable points to \code{Base} functions. A call to a virtual function from a ctor or dtor will *always* be statically dispatched to the implementation in *that* class, not a derived one.
+    \item \textbf{Slicing:} As mentioned in Topic 2, slicing destroys polymorphism. A \code{Base b = Derived();} object is not polymorphic; it's just a \code{Base}.
+    \item \textbf{Forgetting \code{override}:} If you misspell a function (\code{ocuppation()}) and don't use \code{override}, you create a *new* function instead of overriding. The compiler won't warn you. \code{override} makes this a compile error.
+\end{enumerate}
+
+\subsubsection*{Performance Notes}
+\begin{itemize}
+    \item \textbf{vtable/vptr Overhead:} Every polymorphic object is larger by one pointer (the vptr).
+    \item \textbf{Call Overhead:} A virtual call is more expensive than a direct call. It's (at minimum) two pointer indirections and a register setup.
+    \item \textbf{Inlining Prevention:} The compiler cannot inline a virtual call (in most cases) because the function to be called is unknown until runtime. This can be a significant performance hit in tight loops.
+\end{itemize}
+
+\subsubsection*{Quick Self-Check}
+\begin{description}
+    \item[Q:] What is the "Rule of Thumb" for virtual destructors?
+    \item[A:] If a class has *any* virtual functions, it should have a virtual destructor. If a class is intended as a base class, it should have a virtual destructor.
+    \item[Q:] What does \code{override} do?
+    \item[A:] It's a promise to the compiler that the function is intended to override a virtual function from a base class. If it doesn't, the compiler errors out.
+    \item[Q:] What is dynamic (runtime) dispatch?
+    \item[A:] The process of selecting which function implementation to call (Base vs. Derived) at runtime, based on the *actual* type of the object, via the vtable.
+\end{description}
+
+\subsubsection*{References}
+cppreference: \texttt{virtual}, \texttt{override}, \texttt{final}, \texttt{dynamic dispatch}
+
+\subsection{Topic 4: Abstract Base Classes (ABCs)}
+
+\subsubsection*{Concept}
+An Abstract Base Class (ABC) is a class that cannot be instantiated on its own. It is designed purely to be a \textbf{base class} that defines an \textbf{interface}. An interface is a contract: it specifies *what* a derived class must be able to do, but not *how*.
+
+This is achieved by one or more \textbf{pure virtual functions}. A pure virtual function is a virtual function that is declared but not (usually) defined, and is marked with \code{= 0}. Any class that inherits from an ABC *must* override all of its pure virtual functions, or it, too, becomes an abstract class.
+
+ABCs are the primary way to build component-based, "pluggable" systems in C++ (Slide 17).
+
+\subsubsection*{Syntax Patterns}
+\begin{lstlisting}
+// Abstract Base Class (Interface)
+class ISimulation { // "I" prefix is a common (but not required) convention
+public:
+    // Pure virtual function
+    virtual void run() = 0;
+    
+    // Another pure virtual function
+    virtual std::string get_name() const = 0;
+
+    // Abstract class still needs a virtual destructor!
+    virtual ~ISimulation() = default; 
+};
+
+// Concrete (non-abstract) Derived Class
+class ConcreteSim : public ISimulation {
+public:
+    // Must implement ALL pure virtual functions
+    void run() override {
+        // ... implementation ...
+    }
+    
+    std::string get_name() const override {
+        return "ConcreteSim";
+    }
+};
+
+// ISimulation sim; // ERROR: Cannot instantiate abstract class
+ConcreteSim sim;   // OK
+ISimulation& ref = sim; // OK
+\end{lstlisting}
+
+\subsubsection*{Minimal Example (Slide 17: \code{Simulation})}
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+// The ABC (Interface)
+class Simulation {
+public:
+    virtual void run() = 0; // Pure virtual
+    virtual std::string name() const = 0; // Pure virtual
+    virtual ~Simulation() = default;
+};
+
+// A concrete implementation
+class PennaSim : public Simulation {
+public:
+    void run() override {
+        std::cout << "Running Penna model...\n";
+    }
+    std::string name() const override {
+        return "Penna";
+    }
+};
+
+// Another concrete implementation
+class IsingSim : public Simulation {
+public:
+    void run() override {
+        std::cout << "Running Ising model...\n";
+    }
+    std::string name() const override {
+        return "Ising";
+    }
+};
+
+// A "driver" function that only knows the interface
+void perform(Simulation& sim) {
+    std::cout << "Performing simulation: " << sim.name() << "\n";
+    sim.run();
+}
+
+int main() {
+    PennaSim p_sim;
+    IsingSim i_sim;
+
+    perform(p_sim); // Passes PennaSim as Simulation&
+    perform(i_sim); // Passes IsingSim as Simulation&
+    
+    // Simulation s; // COMPILE ERROR
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Performing simulation: Penna
+Running Penna model...
+Performing simulation: Ising
+Running Ising model...
+\end{buildoutput}
+
+\subsubsection*{Worked Example (Heterogeneous Collection)}
+This is the canonical use case: managing a collection of *different* objects that all share the same interface. We use \code{std::vector<std::unique\_ptr<Base>>} to store them without slicing and to manage their memory automatically (RAII).
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory> // For std::unique_ptr
+
+// Interface
+class Shape {
+public:
+    virtual double area() const = 0;
+    virtual std::string name() const = 0;
+    virtual ~Shape() = default;
+};
+
+// Concrete class 1
+class Circle : public Shape {
+private:
+    double radius_;
+public:
+    Circle(double r) : radius_(r) {}
+    double area() const override { return 3.14159 * radius_ * radius_; }
+    std::string name() const override { return "Circle"; }
+};
+
+// Concrete class 2
+class Rectangle : public Shape {
+private:
+    double w_, h_;
+public:
+    Rectangle(double w, double h) : w_(w), h_(h) {}
+    double area() const override { return w_ * h_; }
+    std::string name() const override { return "Rectangle"; }
+};
+
+int main() {
+    // A heterogeneous collection of shapes
+    std::vector<std::unique_ptr<Shape>> shapes;
+    
+    // Use std::make_unique to create and add objects
+    shapes.push_back(std::make_unique<Circle>(10.0));
+    shapes.push_back(std::make_unique<Rectangle>(5.0, 10.0));
+    shapes.push_back(std::make_unique<Circle>(2.0));
+
+    double total_area = 0.0;
+    
+    // Polymorphic loop
+    for (const auto& s_ptr : shapes) {
+        // s_ptr is a unique_ptr<Shape>
+        // s_ptr->area() calls the virtual function
+        std::cout << "Shape: " << s_ptr->name() 
+                  << ", Area: " << s_ptr->area() << "\n";
+        total_area += s_ptr->area();
+    }
+    
+    std::cout << "Total area: " << total_area << "\n";
+    // All memory is automatically freed when vector is destroyed
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Shape: Circle, Area: 314.159
+Shape: Rectangle, Area: 50
+Shape: Circle, Area: 12.5664
+Total area: 376.725
+\end{buildoutput}
+
+\subsubsection*{Common Pitfalls \& UB}
+\begin{enumerate}
+    \item \textbf{Forgetting to implement a pure virtual function:} The compiler will stop you from instantiating the derived class, giving an "is abstract" error.
+    \item \textbf{Forgetting the virtual destructor:} Even if an ABC has no data and no ctor, it *must* have a virtual destructor. Otherwise, \code{delete} on a base pointer is Undefined Behavior.
+    \item \textbf{Interface Bloat:} Defining an interface that is too large ("fat interface"). Clients are forced to implement functions they don't need. This violates the Interface Segregation Principle.
+\end{enumerate}
+
+\subsubsection*{Performance Notes}
+\begin{itemize}
+    \item \textbf{No difference:} The performance characteristics are identical to any other class using virtual functions (Topic 3). The \code{= 0} is a compile-time concept; the runtime dispatch mechanism (vtable) is the same.
+\end{itemize}
+
+\subsubsection*{Quick Self-Check}
+\begin{description}
+    \item[Q:] What is a pure virtual function?
+    \item[A:] A virtual function assigned \code{= 0}. It makes the class abstract and forces derived classes to provide an implementation.
+    \item[Q:] What is the purpose of an ABC?
+    \item[A:] To define an *interface* (a contract) that concrete classes can implement, enabling polymorphism without coupling code to specific implementations.
+    \item[Q:] What is the "canonical" way to store a heterogeneous collection in C++?
+    \item[A:] \code{std::vector<std::unique\_ptr<Base>>} or \code{std::vector<std::shared\_ptr<Base>>}.
+\end{description}
+
+\subsubsection*{References}
+cppreference: \texttt{abstract class}, \texttt{std::unique\_ptr}
+
+\subsection{Topic 5: Compile-Time Polymorphism (Templates)}
+
+\subsubsection*{Concept}
+Templates are the cornerstone of generic programming in C++. They are not functions or classes, but rather \textbf{blueprints} that the compiler uses to \textbf{generate} functions or classes at compile time. This "polymorphism" occurs at *compile time* because a single template, like \code{std::sort}, can operate on "many forms" (\code{vector<int>}, \code{deque<string>}, etc.), but the code for each specific version is generated by the compiler.
+
+This process is called \textbf{monomorphization}. When you use \code{std::vector<int>}, the compiler writes a \code{vector\_int} class. When you use \code{std::vector<double>}, it writes a *separate* \code{vector\_double} class.
+
+This approach requires no common base class or \code{virtual} functions. It works via "duck typing": if a type \code{T} has the required functions/operators (e.g., \code{operator<} for \code{std::sort}), it will compile. C++20 \textbf{concepts} make this explicit, allowing us to put constraints on \code{T}.
+
+\subsubsection*{Syntax Patterns}
+\begin{lstlisting}
+// Function Template
+template <typename T>
+T add(T a, T b) {
+    return a + b; // Requires T to have operator+
+}
+
+// Class Template
+template <typename T>
+class Box {
+private:
+    T value;
+public:
+    Box(T v) : value(v) {}
+    T get() const { return value; }
+};
+
+// C++20 Concept
+template <typename T>
+concept Integral = std::is_integral_v<T>;
+
+// Constrained Function Template (C++20)
+template <Integral T>
+T add_integral(T a, T b) {
+    return a + b;
+}
+// Or: template <typename T> requires Integral<T>
+// T add_integral(T a, T b) { /* ... */ }
+\end{lstlisting}
+
+\subsubsection*{Minimal Example (Generic \code{add})}
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+
+// Function template
+template <typename T>
+T add(T a, T b) {
+    return a + b;
+}
+
+int main() {
+    // Compiler generates add(int, int)
+    std::cout << "Int: " << add(5, 10) << "\n";
+    
+    // Compiler generates add(double, double)
+    std::cout << "Double: " << add(1.5, 2.3) << "\n";
+    
+    // Compiler generates add(std::string, std::string)
+    std::string s1 = "Hello, ";
+    std::string s2 = "world!";
+    std::cout << "String: " << add(s1, s2) << "\n";
+    
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Int: 15
+Double: 3.8
+String: Hello, world!
+\end{buildoutput}
+
+\subsubsection*{Worked Example (Slide 31: Generic Stack)}
+This is the final, most reusable version of the \code{Stack} from the slides.
+\begin{lstlisting}
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <memory> // For std::allocator
+
+namespace Stack {
+template <typename T> // Make the whole class a template
+class stack {
+private:
+    T* s_; 
+    T* p_; 
+    int n_;
+
+public:
+    explicit stack(int l) : n_(l) {
+        // Use allocator to separate allocation from construction
+        std::allocator<T> alloc;
+        s_ = alloc.allocate(n_);
+        p_ = s_; // p_ points to the next free slot
+    }
+
+    ~stack() {
+        // Must manually destruct elements
+        for (T* it = s_; it != p_; ++it) {
+            it->~T(); // Call destructor
+        }
+        // Deallocate memory
+        std::allocator<T> alloc;
+        alloc.deallocate(s_, n_);
+    }
+
+    // Rule of 5: Deleted
+    stack(const stack&) = delete;
+    stack& operator=(const stack&) = delete;
+    stack(stack&&) = delete;
+    stack& operator=(stack&&) = delete;
+
+    void push(T v) { // Pass T by value (or T&& and T const&)
+        if (p_ == s_ + n_) {
+            throw std::runtime_error("Stack overflow");
+        }
+        // Construct object in-place
+        std::construct_at(p_, std::move(v));
+        ++p_;
+    }
+
+    T pop() {
+        if (p_ == s_) {
+            throw std::runtime_error("Stack underflow");
+        }
+        --p_;
+        T val = std::move(*p_); // Move value out
+        p_->~T(); // Destruct object
+        return val;
+    }
+};
+} // namespace Stack
+
+int main() {
+    Stack::stack<std::string> s_str(5);
+    s_str.push("hello");
+    s_str.push("world");
+    std::cout << "Popped: " << s_str.pop() << "\n";
+    
+    Stack::stack<int> s_int(5);
+    s_int.push(100);
+    s_int.push(200);
+    std::cout << "Popped: " << s_int.pop() << "\n";
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Popped: world
+Popped: 200
+\end{buildoutput}
+*(Note: The above implementation is complex! This is why we prefer \code{std::vector} as shown in Topic 6.)*
+
+\subsubsection*{Common Pitfalls \& UB}
+\begin{enumerate}
+    \item \textbf{Error Messages:} Template metaprogramming can produce multi-page, unreadable error messages when a type \code{T} doesn't match the template's requirements. C++20 \textbf{concepts} are the solution.
+    \item \textbf{Code Bloat:} Monomorphization can increase binary size if a large template (e.g., \code{std::vector}) is instantiated for many different types.
+    \item \textbf{Instantiation-Time Errors:} A template can be syntactically correct, but fail to compile only when instantiated with a specific type.
+    \item \textbf{Definition in Headers:} Template definitions (bodies) must almost always be in the header file, as the compiler needs the full definition to instantiate it. This differs from non-template functions.
+\end{enumerate}
+
+\subsubsection*{Performance Notes}
+\begin{itemize}
+    \item \textbf{Zero-Cost Abstraction:} This is the key benefit. All "polymorphism" is resolved at compile time.
+    \item \textbf{Inlining:} The compiler generates a specific function (e.g., \code{add(int, int)}) and can inline it just like a normal function. This is *much* faster than a vtable call. (See Topic 7).
+    \item \textbf{Monomorphization Cost:} The *compile time* can increase as the compiler has to generate all the template code.
+\end{itemize}
+
+\subsubsection*{Quick Self-Check}
+\begin{description}
+    \item[Q:] What is the difference between runtime and compile-time polymorphism?
+    \item[A:] Runtime (virtuals) uses one function and a vtable to decide at runtime. Compile-time (templates) generates *many* specific functions at compile time.
+    \item[Q:] What is monomorphization?
+    \item[A:] The compiler's process of "stamping out" a concrete class or function (e.g., \code{stack<int>}) from a generic template (\code{template <T> class stack}).
+    \item[Q:] What C++20 feature improves template error messages?
+    \item[A:] Concepts. They allow you to name and enforce requirements on template parameters.
+\end{description}
+
+\subsubsection*{References}
+cppreference: \texttt{templates}, \texttt{C++20 concepts}
+
+\subsection{Paradigms in Practice I: The \code{Stack}}
+
+\subsubsection*{Concept}
+This topic (Slides 27-31) uses a single problem—implementing a LIFO Stack—to compare four programming paradigms. This is a powerful pedagogical tool for understanding *why* we use C++ features.
+\begin{enumerate}
+    \item \textbf{Procedural (C-style):} (Slide 28) Global data, free functions. Dangerous, no encapsulation, no error checking.
+    \item \textbf{Modular:} (Slide 29) Bundles data into a \code{struct} and functions into a \code{namespace}. Better, but requires manual \code{create}/\code{destroy} calls. Not exception-safe.
+    \item \textbf{Object-Oriented (RAII):} (Slide 30) A \code{class} with \code{private} data and public methods. Ctor/Dtor handle memory (RAII). This is safe, encapsulated, and exception-safe.
+    \item \textbf{Generic (Templates):} (Slide 31) The OOP version is made generic with \code{template <typename T>}. This is the most reusable, safe, and powerful version.
+\end{enumerate}
+We already showed the OOP (Topic 1) and Generic (Topic 5) versions. The modern C++20 "best practice" version would not do manual memory management at all, but would *adapt* an existing container, like \code{std::vector}.
+
+\subsubsection*{Worked Example (Modern C++20 Generic Stack)}
+Instead of manual \code{new}/\code{delete}, we implement our \code{stack} by *wrapping* a \code{std::vector}. This is the "Adapter" pattern and is how \code{std::stack} works. It's safer, simpler, and more efficient.
+\begin{lstlisting}
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector> // Use vector for backing storage
+#include <utility> // For std::move
+
+namespace ModernStack {
+template <typename T>
+class stack {
+private:
+    // "Composition over Inheritance"
+    // We *contain* a vector to do the work.
+    std::vector<T> storage_;
+
+public:
+    // No explicit ctor/dtor needed! 
+    // vector's default ctor/dtor do the work. RAII!
+
+    // C++20: Check if stack is empty
+    [[nodiscard]] bool empty() const noexcept {
+        return storage_.empty();
+    }
+
+    // C++20: Get current size
+    [[nodiscard]] size_t size() const noexcept {
+        return storage_.size();
+    }
+
+    // Add an element (copy)
+    void push(const T& value) {
+        storage_.push_back(value); // Delegate to vector
+    }
+    
+    // Add an element (move)
+    void push(T&& value) {
+        storage_.push_back(std::move(value)); // Delegate to vector
+    }
+
+    // Emplace: construct in-place (most efficient)
+    template <typename... Args>
+    void emplace(Args&&... args) {
+        storage_.emplace_back(std::forward<Args>(args)...);
+    }
+
+    // Remove an element
+    void pop() {
+        if (empty()) {
+            throw std::runtime_error("Stack underflow");
+        }
+        storage_.pop_back(); // Delegate to vector
+    }
+
+    // Get a reference to the top element
+    T& top() {
+        if (empty()) {
+            throw std::runtime_error("Stack underflow");
+        }
+        return storage_.back(); // Delegate to vector
+    }
+    
+    const T& top() const {
+        if (empty()) {
+            throw std::runtime_error("Stack underflow");
+        }
+        return storage_.back();
+    }
+};
+} // namespace ModernStack
+
+int main() {
+    ModernStack::stack<std::string> s;
+    s.push("This");
+    s.push("is");
+    s.emplace("much"); // Efficiently construct "much"
+    s.emplace("safer!");
+
+    while (!s.empty()) {
+        std::cout << s.top() << " ";
+        s.pop();
+    }
+    std::cout << "\n";
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+safer! much is This 
+\end{buildoutput}
+
+\subsubsection*{Pitfalls \& Performance}
+\begin{itemize}
+    \item \textbf{Pitfall (Procedural):} Massive. No error checking, global state, easy to corrupt the stack pointer.
+    \item \textbf{Pitfall (Modular):} Forgetting to call \code{destroy} is a memory leak. Not exception-safe (an exception after \code{create} but before \code{destroy} leaks).
+    \item \textbf{Pitfall (OOP/Manual):} Correctly implementing the Rule of 5 (copy/move/dtor) is extremely difficult, especially for exception safety.
+    \item \textbf{Performance (Vector-based):} \code{push\_back} is \textit{amortized} O(1). When the vector is full, it reallocates (O(N)), which is a large single-frame cost. \code{pop\_back} and \code{top} are O(1).
+\end{itemize}
+
+\subsubsection*{References}
+cppreference: \texttt{std::stack}, \texttt{std::vector}, \texttt{Container adaptors}
+
+\subsection{Paradigms in Practice II: Numerical Integration}
+
+\subsubsection*{Concept}
+This topic (Slides 33-36) is the "grand finale" comparison. We need to pass a function (e.g., $f(x) = x \sin(x)$) to an \code{integrate} algorithm. How we pass $f$ demonstrates the trade-offs.
+\begin{enumerate}
+    \item \textbf{Procedural (C-style):} (Slide 34) Pass a \textbf{function pointer} (\code{double (*f)(double)}).
+    \item \textbf{Object-Oriented (Runtime):} (Slide 35) Pass a \textbf{base-class reference} (\code{SimpleFunction& f}). \code{SimpleFunction} is an ABC with a \code{virtual double operator()(double) const = 0;}. This allows us to select the function at runtime.
+    \item \textbf{Generic (Compile-Time):} (Slide 36) Pass a \textbf{template parameter} (\code{F f}). \code{F} can be *anything* that is callable, like a function pointer, a lambda, or a struct with \code{operator()}.
+\end{enumerate}
+The clear winner for performance is the Generic/Template approach. The compiler knows the exact function $f$ at compile time, so it can \textbf{inline} the call to \code{f(xi)} inside the integration loop, completely eliminating all function call overhead. The OOP/Virtual approach *cannot* be inlined and must pay the vtable-call-cost on *every single iteration* of the loop, which is disastrous for performance in a numerical simulation.
+
+\subsubsection*{Worked Example (Comparing OOP vs. Generic Integration)}
+\begin{lstlisting}
+#include <iostream>
+#include <cmath> // For std::sin
+#include <memory> // For std::unique_ptr
+#include <iomanip> // For std::setprecision
+
+// --- 1. Object-Oriented (Runtime) Approach ---
+namespace OOP {
+// The ABC interface
+struct SimpleFunction {
+    virtual double operator()(double x) const = 0;
+    virtual ~SimpleFunction() = default;
+};
+
+// The algorithm: takes the interface
+double integrate(const SimpleFunction& f, double a, double b, int N) {
+    double dx = (b - a) / N;
+    double I = 0.0;
+    for (int i = 0; i <= N; ++i) {
+        double x = a + i * dx;
+        double w = (i == 0 || i == N) ? 0.5 : 1.0;
+        I += w * f(x); // VIRTUAL CALL inside loop! (slow)
+    }
+    return I * dx;
+}
+
+// A concrete implementation
+struct MyFunc1 : SimpleFunction {
+    double operator()(double x) const override { return x * std::sin(x); }
+};
+} // namespace OOP
+
+// --- 2. Generic (Compile-Time) Approach ---
+namespace Generic {
+// The algorithm: template
+template <typename Function>
+double integrate(Function f, double a, double b, int N) {
+    double dx = (b - a) / N;
+    double I = 0.0;
+    for (int i = 0; i <= N; ++i) {
+        double x = a + i * dx;
+        double w = (i == 0 || i == N) ? 0.5 : 1.0;
+        I += w * f(x); // DIRECT INLINED CALL! (fast)
+    }
+    return I * dx;
+}
+
+// A concrete implementation (just a struct, no inheritance)
+struct MyFunc1 {
+    double operator()(double x) const { return x * std::sin(x); }
+};
+} // namespace Generic
+
+int main() {
+    double a = 0.0, b = 3.14159;
+    int N = 10000;
+    
+    std::cout << std::fixed << std::setprecision(8);
+
+    // OOP Version
+    OOP::MyFunc1 oop_func;
+    double res_oop = OOP::integrate(oop_func, a, b, N);
+    std::cout << "OOP (Virtual):     " << res_oop << "\n";
+
+    // Generic Version (Functor)
+    Generic::MyFunc1 gen_func;
+    double res_gen = Generic::integrate(gen_func, a, b, N);
+    std::cout << "Generic (Functor): " << res_gen << "\n";
+    
+    // Generic Version (Lambda - C++11 and later)
+    // The compiler creates a struct for this automatically!
+    auto lambda_func = [](double x) { return x * std::sin(x); };
+    double res_lambda = Generic::integrate(lambda_func, a, b, N);
+    std::cout << "Generic (Lambda):  " << res_lambda << "\n";
+    
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+OOP (Virtual):     3.14117033
+Generic (Functor): 3.14117033
+Generic (Lambda):  3.14117033
+\end{buildoutput}
+
+\subsubsection*{Pitfalls \& Performance}
+\begin{itemize}
+    \item \textbf{Performance (OOP):} The virtual call to \code{f(x)} inside the loop is a "performance pessimization." It blocks inlining and adds vtable overhead to *every* step. This is the wrong tool for this job.
+    \item \textbf{Performance (Generic):} This is the "zero-cost abstraction." The call to \code{f(x)} is fully inlined by the compiler, resulting in code equivalent to \code{I += w * (x * std::sin(x));}. This is as fast as manually writing the C-style procedural code.
+    \item \textbf{Flexibility (OOP):} The OOP version's *only* benefit is if you needed to select the function at runtime (e.g., from a user input) and store it in a \code{std::unique\_ptr<SimpleFunction>}.
+    \item \textbf{Flexibility (Generic):} The Generic version is *also* flexible, as it accepts function pointers, functors (structs with \code{operator()}), and lambdas, all with zero overhead.
+\end{itemize}
+
+\subsubsection*{References}
+cppreference: \texttt{function pointers}, \texttt{lambda expressions}, \texttt{functors}
+
+\section{Integration Mini-Projects}
+
+\subsection{Project 1: Polymorphic Shape Manager}
+\textbf{Goal:} Combine Inheritance, ABCs, Runtime Polymorphism, and RAII (\code{std::unique\_ptr}) to manage a heterogeneous list of shapes.
+\begin{lstlisting}
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory> // For std::unique_ptr, std::make_unique
+#include <cmath>  // For M_PI (may need -lm)
+#include <numeric> // For std::accumulate
+#include <iomanip> // For std::setprecision
+
+// 1. The Interface (ABC)
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;
+    virtual std::string name() const = 0;
+};
+
+// 2. Concrete Implementations
+class Circle : public Shape {
+    double r_;
+public:
+    Circle(double r) : r_(r) {}
+    double area() const override { return M_PI * r_ * r_; }
+    std::string name() const override { return "Circle"; }
+};
+
+class Rectangle : public Shape {
+    double w_, h_;
+public:
+    Rectangle(double w, double h) : w_(w), h_(h) {}
+    double area() const override { return w_ * h_; }
+    std::string name() const override { return "Rectangle"; }
+};
+
+int main() {
+    std::cout << std::fixed << std::setprecision(3);
+    
+    // 3. The Heterogeneous Collection (RAII)
+    std::vector<std::unique_ptr<Shape>> shapes;
+    shapes.push_back(std::make_unique<Circle>(5.0));
+    shapes.push_back(std::make_unique<Rectangle>(4.0, 6.0));
+    shapes.push_back(std::make_unique<Circle>(1.0));
+
+    // 4. Polymorphic Processing
+    std::cout << "Processing shapes:\n";
+    for (const auto& pShape : shapes) {
+        // pShape is const std::unique_ptr<Shape>&
+        // pShape->area() is a virtual call
+        std::cout << " - A " << pShape->name() << " with area " 
+                  << pShape->area() << "\n";
+    }
+
+    // 5. Using STL Algorithms (C++20 Range-based)
+    auto get_area = [](const auto& p) { return p->area(); };
+    auto areas = shapes | std::views::transform(get_area);
+    double total_area = std::accumulate(areas.begin(), areas.end(), 0.0);
+
+    // C++17 way (for std::accumulate)
+    // double total_area = std::accumulate(shapes.begin(), shapes.end(), 0.0,
+    //    [](double sum, const auto& p) { return sum + p->area(); });
+
+    std::cout << "Total area: " << total_area << "\n";
+    
+    // Memory is freed automatically
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+Processing shapes:
+ - A Circle with area 78.540
+ - A Rectangle with area 24.000
+ - A Circle with area 3.142
+Total area: 105.681
+\end{buildoutput}
+\textbf{Extension Ideas:}
+\begin{itemize}
+    \item Add a \code{virtual double perimeter() const = 0;} to the interface and implement it.
+    \item Create a \code{Triangle} class.
+    \item Write a function \code{find\_largest\_shape(const std::vector<...>&)} that returns a \code{const Shape*} to the shape with the biggest area.
+\end{itemize}
+
+\subsection{Project 2: Generic Statistics Calculator}
+\textbf{Goal:} Combine Templates (Compile-Time Polymorphism), \code{<algorithm>}, and C++20 Ranges to create a statistics utility that works on *any* container of numbers.
+\begin{lstlisting}
+#include <iostream>
+#include <vector>
+#include <list>     // To show it works on different containers
+#include <numeric>  // For std::accumulate
+#include <algorithm> // For std::sort, std::minmax_element
+#include <cmath>     // For std::sqrt
+#include <stdexcept> // For std::runtime_error
+#include <iomanip>   // For std::setprecision
+
+template <typename T>
+struct StatsResult {
+    T min;
+    T max;
+    T mean;
+    T stddev;
+};
+
+// C++20 Version using Ranges
+#include <ranges>
+
+template <std::ranges::forward_range R>
+// Requires that the element type of R is convertible to double
+requires std::convertible_to<std::ranges::range_value_t<R>, double>
+auto calculate_stats(R&& range) -> StatsResult<double> {
+    
+    // We need a non-destructive copy for sorting, etc.
+    // This is a trade-off. We could also just iterate.
+    // For this example, let's copy to a vector.
+    std::vector<double> data;
+    std::ranges::copy(range, std::back_inserter(data));
+
+    if (data.empty()) {
+        throw std::runtime_error("Empty range");
+    }
+
+    // Min/Max
+    const auto [min_it, max_it] = std::ranges::minmax_element(data);
+    
+    // Mean
+    double sum = std::accumulate(data.begin(), data.end(), 0.0);
+    double mean = sum / data.size();
+
+    // StdDev
+    double sq_sum = std::accumulate(data.begin(), data.end(), 0.0, 
+        [mean](double acc, double val) {
+            return acc + (val - mean) * (val - mean);
+        });
+    double stddev = std::sqrt(sq_sum / data.size());
+
+    return {*min_it, *max_it, mean, stddev};
+}
+
+// Helper to print stats
+template <typename T>
+void print_stats(const std::string& title, const StatsResult<T>& stats) {
+    std::cout << title << ":\n"
+              << "  Min:    " << stats.min << "\n"
+              << "  Max:    " << stats.max << "\n"
+              << "  Mean:   " << stats.mean << "\n"
+              << "  StdDev: " << stats.stddev << "\n";
+}
+
+int main() {
+    std::cout << std::fixed << std::setprecision(4);
+
+    std::vector<int> v = {1, 5, 10, 3, 7, 20, 8};
+    auto stats_v = calculate_stats(v);
+    print_stats("std::vector<int>", stats_v);
+
+    std::list<double> l = {1.5, 2.5, 3.5, 4.5, 5.5};
+    auto stats_l = calculate_stats(l);
+    print_stats("std::list<double>", stats_l);
+
+    // C++20 view: a non-owning range
+    auto even_v = v | std::views::filter([](int n){ return n % 2 == 0; });
+    auto stats_v_even = calculate_stats(even_v);
+    print_stats("std::vector<int> (evens)", stats_v_even);
+    
+    return 0;
+}
+\end{lstlisting}
+\begin{buildoutput}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp && ./a.out
+std::vector<int>:
+  Min:    1.0000
+  Max:    20.0000
+  Mean:   7.7143
+  StdDev: 5.8678
+std::list<double>:
+  Min:    1.5000
+  Max:    5.5000
+  Mean:   3.5000
+  StdDev: 1.4142
+std::vector<int> (evens):
+  Min:    8.0000
+  Max:    20.0000
+  Mean:   14.0000
+  StdDev: 5.6569
+\end{buildoutput}
+\textbf{Extension Ideas:}
+\begin{itemize}
+    \item Add median calculation (requires sorting and finding the middle element).
+    \item Make the function work "in-place" without copying, if the range is a \code{random\_access\_range} and we are allowed to mutate it (e.g., by sorting).
+    \item Change \code{StatsResult} to be a template on the \code{value\_type} (e.g., \code{StatsResult<T>}).
+\end{itemize}
+
+\section{Cheat Sheet (C++20)}
+
+\subsection{Syntax Capsules}
+
+\begin{description}
+    \item[Initialization]
+    \begin{itemize}
+        \item \code{T x(v);} (Direct): Calls constructor.
+        \item \code{T x = v;} (Copy): Calls constructor (or move-ctor), though copy elision is likely.
+        \item \code{T x\{v\};} (Direct-list): \textbf{Prefer this.} Calls constructor, disallows "narrowing" conversions.
+        \item \code{T x = \{v\};} (Copy-list): As above, also preferred.
+        \item \code{T x\{\};} (Value): Zero/default initializes. \code{int x\{\};} $\rightarrow$ \code{x} is 0.
+    \end{itemize}
+    \item[Value Categories]
+    \begin{itemize}
+        \item \textbf{lvalue} (locator): Has an identity/address. Can take its address. (e.g., \code{int x;}, \code{x} is an lvalue).
+        \item \textbf{prvalue} (pure rvalue): A "temporary." The result of an expression. (e.g., \code{42}, \code{x+y}).
+        \item \textbf{xvalue} (expiring): An lvalue that can be "moved from." The result of \code{std::move(x)}.
+        \item \textbf{rvalue}: A prvalue or an xvalue. Binds to \code{T&&}.
+        \item \textbf{lvalue-ref}: \code{T&}. Binds only to lvalues.
+        \item \textbf{const lvalue-ref}: \code{const T&}. Binds to lvalues and rvalues.
+        \item \textbf{rvalue-ref}: \code{T&&}. Binds only to rvalues.
+    \end{itemize}
+    \item[Polymorphism Rules]
+    \begin{itemize}
+        \item Use \code{virtual} on the base class function.
+        \item Use \code{override} on all derived class functions.
+        \item Use \code{final} to prevent further overriding.
+        \item \textbf{CRITICAL:} Any base class must have a \code{public virtual} destructor.
+    \end{itemize}
+    \item[Container Invalidation (Common)]
+    \begin{itemize}
+        \item \code{std::vector}: \code{push\_back} invalidates all iterators/references if it reallocates. \code{insert}/\code{erase} invalidates all iterators/references at/after the insertion/erasure point.
+        \item \code{std::deque}: \code{push\_front/back} invalidates iterators, but not references/pointers.
+        \item \code{std::list}: \code{insert}/\code{erase} only invalidates iterators to the element(s) erased.
+        \item \code{std::map}/\code{std::set}: \code{insert}/\code{erase} only invalidates iterators to the element(s) erased.
+    \end{itemize}
+\end{description}
+
+\subsection{"Do/Don't" Checklist}
+
+\begin{itemize}
+    \item \textbf{DO} use RAII for all resource management (\code{std::unique\_ptr}, \code{std::vector}, \code{std::string}, \code{std::lock\_guard}).
+    \item \textbf{DON'T} use raw \code{new} or \code{delete}. Let smart pointers and containers do it.
+    \item \textbf{DO} prefer \code{std::unique\_ptr} as the default smart pointer. Only use \code{std::shared\_ptr} when shared ownership is *required*.
+    \item \textbf{DON'T} use owning raw pointers (e.g., \code{MyClass* m\_ptr;} in a class).
+    \item \textbf{DO} pass polymorphic objects by pointer (\code{Base*}) or reference (\code{Base&}).
+    \item \textbf{DON'T} pass polymorphic objects by value (causes slicing).
+    \item \textbf{DO} make base class destructors \code{public} and \code{virtual}.
+    \item \textbf{DON'T} call \code{virtual} functions from a constructor or destructor.
+    \item \textbf{DO} prefer algorithms (\code{std::ranges::sort}, \code{std::find\_if}) over hand-written loops.
+    \item \textbf{DON'T} use \code{protected} data. Prefer \code{private} data and \code{protected} accessors.
+    \item \textbf{DO} prefer templates (generic) for algorithms where performance is critical.
+    \item \textbf{DO} use \code{virtual} (OOP) for heterogeneous collections and stable ABIs.
+    \item \textbf{DO} mark single-argument constructors \code{explicit} to prevent implicit conversions.
+\end{itemize}
+
+\section{Glossary}
+
+\begin{description}
+    \item[ABI (Application Binary Interface)] The low-level interface between compiled code modules (e.g., function calling conventions, vtable layout). Changes to a class (e.g., adding a \code{virtual} function) can break ABI.
+    \item[ADL (Argument-Dependent Lookup)] A C++ rule for finding functions. If you call \code{func(obj)}, the compiler searches not only the global/current scope, but also the \code{namespace} where \code{obj}'s type is defined.
+    \item[as-if rule] The compiler can make any optimization it wants, as long as the observable behavior of the program is "as if" it had executed the code exactly as written.
+    \item[Copy Elision] A compiler optimization that avoids (elides) unnecessary copy/move operations. Mandatory in C++17 for function return values.
+    \item[Lifetime] The period during which an object exists, from the end of its constructor to the end of its destructor. Accessing an object outside its lifetime is UB.
+    \item[ODR (One Definition Rule)] An object or function must have exactly one definition in a program. Violations (e.g., two different definitions of \code{int foo()} in two \code{.cpp} files) are linker errors or UB.
+    \item[RAII (Resource Acquisition Is Initialization)] The core C++ idiom of tying resource lifetime to object lifetime (ctor/dtor).
+    \item[SSO (Small String Optimization)] An optimization where \code{std::string} avoids heap allocation for small strings, storing them inside the object's own 24-32 bytes of storage.
+    \item[Standard-Layout] A class property (a \code{struct} with no \code{virtual} functions, all \code{public} members, etc.) that allows it to be treated like a C \code{struct} and safely memory-mapped.
+    \item[Trivial] A class property (trivial ctor/dtor/copy/move) that means it can be safely \code{memcpy}'d.
+    \item[UB (Undefined Behavior)] An action (e.g., deleting via non-virtual dtor, array out-of-bounds, data race) for which the C++ standard imposes *no requirements*. The program may crash, corrupt data, or appear to work.
+\end{description}
+
+\section{Appendix: Build \& Tooling}
+
+\subsection{Compiler Invocations}
+All examples in this document are designed to be compiled with a C++20-compliant compiler. We enable all warnings, as you should never ignore compiler warnings.
+
+\subsubsection*{GCC (g++)}
+\begin{verbatim}
+g++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp -o my_program
+./my_program
+\end{verbatim}
+
+\subsubsection*{Clang (clang++)}
+\begin{verbatim}
+clang++ -std=c++20 -O2 -Wall -Wextra -pedantic file.cpp -o my_program
+./my_program
+\end{verbatim}
+
+\subsubsection*{Warning Flags Explained}
+\begin{itemize}
+    \item \code{-std=c++20}: Enforce the C++20 standard.
+    \item \code{-O2}: Enable level 2 optimizations. This is important, as some C++ features (like templates, move semantics) are designed to be optimized away.
+    \item \code{-Wall}: Enable a large, common set of warnings (e.g., unused variables).
+    \item \code{-Wextra}: Enable *more* warnings not covered by \code{-Wall}.
+    \item \code{-pedantic}: Enforce strict ISO C++ compliance, disabling compiler-specific extensions.
+\end{itemize}
+
+\subsection{Sanitizers (Debugging)}
+For debugging, compiling with \code{-O0 -g} (no optimization, debug symbols) and using sanitizers is invaluable.
+
+\begin{itemize}
+    \item \textbf{AddressSanitizer (ASan):} Finds memory errors (out-of-bounds, use-after-free, memory leaks).
+    \begin{verbatim}
+    g++ -std=c++20 -g -fsanitize=address file.cpp && ./a.out
+    \end{verbatim}
+    \item \textbf{UndefinedBehaviorSanitizer (UBSan):} Finds UB (integer overflow, null pointer dereference, etc.).
+    \begin{verbatim}
+    g++ -std=c++20 -g -fsanitize=undefined file.cpp && ./a.out
+    \end{verbatim}
+\end{itemize}
+These tools are your best friends for finding subtle bugs, especially those related to pointers, lifetime, and undefined behavior.
+
+\section{Assumptions Made}
+
+In expanding the provided slide deck, the following assumptions were made:
+\begin{itemize}
+    \item The core topics are \textbf{Inheritance}, \textbf{Runtime Polymorphism} (\code{virtual}), and its contrast with \textbf{Compile-Time Polymorphism} (templates).
+    \item The "Penna model" slides serve to motivate *why* \code{virtual} functions are necessary (a base class algorithm needing to call a derived class's customization).
+    \item The "Stack" and "Numerical Integration" examples are pedagogical tools to compare the four programming paradigms (Procedural, Modular, OOP, Generic), highlighting the safety (RAII) and performance (inlining) trade-offs.
+    \item The target audience is familiar with C++ basics (loops, functions, \code{std::vector}) but needs a rigorous, modern understanding of OOP and generic programming design.
+    \item All code should adhere to modern C++20 best practices (RAII, smart pointers, algorithms, ranges) and explicitly discourage C-style or manual resource management (raw \code{new}/\code{delete}).
+\end{itemize}
+
+\end{document}

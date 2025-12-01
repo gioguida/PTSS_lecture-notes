@@ -1,0 +1,32 @@
+## Core LaTeX auxiliary files ##
+*.aux
+*.log
+*.out
+*.toc
+*.lot
+*.lof
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.dvi
+*.nav
+*.snm
+*.vrb
+
+## specific logs visible in your status ##
+texput.log
+compile_*.txt
+*.tmp
+
+## Bibliography auxiliary files ##
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+
+## OS Generated ##
+.DS_Store
+Thumbs.db
+
+## EXPLICITLY KEEP PDFS ##
+!*.pdf

@@ -1,0 +1,1136 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ A Detailed Textbook}
+\author{Based on lecture slides}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Programming Techniques for Scientific Simulations},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% --- INTRODUCTION (from Slide 1) ---
+\section{Introduction}
+
+Welcome to this course on programming techniques for scientific simulations. A \textbf{scientific simulation} is a powerful tool that allows us to build a "virtual laboratory" inside a computer. We use it to model complex real-world phenomena, such as the orbit of planets, the intricate dance of molecules in a chemical reaction, or the dynamics of a biological population.
+
+To build these simulations, just "knowing the physics" isn't enough. We also need to write code that is:
+\begin{itemize}
+    \item \textbf{Robust:} It doesn't crash or fail unexpectedly. It can gracefully handle errors.
+    \item \textbf{Correct:} It produces the right answer. We need to be able to prove and verify this.
+    \item \textbf{Professional:} It is easy for others (and our future selves) to read, understand, and modify.
+\end{itemize}
+
+In this first part of our study, we will cover five fundamental topics that form the bedrock of high-quality scientific programming:
+
+\begin{enumerate}
+    \item \textbf{Exceptions:} The modern C++ way to handle errors and exceptional situations.
+    \item \textbf{Testing:} The process of verifying that our code actually does what we think it does.
+    \item \textbf{Random Numbers:} Understanding how computers generate and use randomness, which is the heart of many advanced simulation methods.
+    \item \textbf{Timing:} How to measure the speed of our code to find and eliminate bottlenecks.
+    \item \textbf{Documentation:} The art of writing explanations for our code so that it can be understood and used by others.
+\end{enumerate}
+
+Let's begin with the first, and perhaps most critical, topic: what to do when things go wrong.
+
+\newpage
+
+% --- CHAPTER 1: EXCEPTIONS (from Slides 2-9) ---
+\section{Error Handling and Exceptions}
+
+\subsection{The Fundamental Problem: What Happens When Code Fails?}
+Imagine you've written a function, a self-contained "worker" designed to perform a specific task. For example, a function \texttt{calculate\_step()} that computes the next position of a planet in its orbit. During its execution, this function detects a critical error---perhaps the input data is corrupt, or a calculation results in an impossible number (like dividing by zero).
+
+The function is now in a state where it \textbf{cannot complete its task}.
+
+This is not a hypothetical problem; it happens constantly in scientific computing.
+
+\paragraph{A Real-World Example: A Failing Time Step}
+In physics and engineering, many simulations involve solving differential equations. These are equations that describe \emph{change} over time. We often write this as:
+$$ \dot{y} = f(t, y) $$
+This notation simply means "The rate of change of some value $y$ (written as $\dot{y}$) depends on the current time $t$ and the current value $y$."
+
+To solve this on a computer, we can't get a continuous answer. Instead, we take tiny, discrete "time steps" to find the \emph{next} value ($y^{n+1}$) based on the \emph{current} value ($y^n$). One common method is the \textbf{implicit midpoint method}, which has the formula:
+$$ y^{n+1} = y^n + \Delta t \cdot f\left(t^n + \frac{\Delta t}{2}, \frac{y^n + y^{n+1}}{2}\right) $$
+Notice the problem: the value we want to find, $y^{n+1}$, appears on \emph{both sides} of the equation! We can't just compute it directly. To solve this, we must use a numerical algorithm called a \textbf{root solver}.
+
+A root solver is like a "guess-and-check" machine. It tries a value for $y^{n+1}$, sees how "wrong" the equation is, and then makes a better guess, repeating until it "converges" on the right answer.
+
+\textbf{But what if the root solver fails?} Maybe no solution exists, or the algorithm just gives up after 1000 guesses. If the root solver fails, our \texttt{timeStep()} function \emph{cannot} calculate $y^{n+1}$. It has failed. It must report this critical error to whatever part of the program \emph{called} it. What should it do?
+
+\subsection{Classic (and Clunky) Strategies for Error Handling}
+
+For decades, programmers have used several strategies to deal with this.
+
+\paragraph{Strategy 1: Terminate the Program}
+This is the simplest and most drastic option. Just crash the program.
+\begin{lstlisting}[language=C++]
+#include <iostream>
+#include <cstdlib> // for std::abort
+
+void my_function() {
+    std::cout << "Error: Root solver failed to converge!" << std::endl;
+    std::abort(); // Halts the program. Immediately.
+}
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Analogy:} A chef, realizing they're out of salt, burns down the entire restaurant.
+    \item \textbf{Pros:} Very easy to write. You can't miss the error.
+    \item \textbf{Cons:} Catastrophic for the user. No chance to save work, no graceful shutdown. Unacceptable for almost any real application.
+\end{itemize}
+
+\paragraph{Strategy 2: Return Status/Error Codes}
+This is the most common method used in older C-style libraries (like BLAS, LAPACK, GSL). The function's return value is used to signal success or failure.
+\begin{lstlisting}[language=C++]
+// Convention: 0 means success, non-zero means error
+int do_stuff() {
+    // ... try to do work ...
+    if (/* something bad happened */) {
+        return 1; // Error code 1: "Solver failed"
+    }
+    if (/* something else bad happened */) {
+        return 2; // Error code 2: "Input was invalid"
+    }
+    return 0; // Success!
+}
+
+// The *caller* must check the return code
+int status = do_stuff();
+if (status != 0) {
+    // Handle the error based on the value of 'status'
+}
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Analogy:} The chef hands the dish back to the waiter (the caller) with a small, printed note. "Code 1: Out of salt."
+    \item \textbf{Pros:} Gives the caller a \emph{chance} to handle the error.
+    \item \textbf{Cons:} It's \emph{easy to forget} to check the return value. If the caller doesn't check \texttt{status}, the program continues in a broken state. It also "pollutes" the function's return value; a function that should return a calculation (e.g., a \texttt{double}) now has to return an \texttt{int} or some complex "status-and-value" object.
+\end{itemize}
+
+\paragraph{Strategy 3: Global Error Flags}
+This method, used by C's \texttt{errno}, stores the error status in a global variable.
+\begin{lstlisting}[language=C++]
+// A global error variable (this is bad practice)
+int global_error_flag = 0;
+
+void do_stuff() {
+    // ... work ...
+    if (/* error */) {
+        global_error_flag = 1;
+        return;
+    }
+}
+
+// The *caller* must check this global flag
+global_error_flag = 0; // Must reset it first!
+do_stuff();
+if (global_error_flag != 0) {
+    // Handle error
+}
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Analogy:} The chef flips a "Problem" switch in the kitchen. The waiter has to remember to look at that switch \emph{immediately} after making an order.
+    \item \textbf{Cons:} This is widely considered terrible practice. Global variables are dangerous; any part of the program can change them, leading to "spooky" bugs. It's not "thread-safe" (if multiple functions run at once, they'll all try to use the same flag).
+\end{itemize}
+
+This leads to the ideal philosophy: \textbf{The detection of an error (in the callee) should be separate from the handling of an error (in the caller).}
+
+\subsection{The Modern C++ Approach: Exceptions}
+Exceptions are the modern C++ mechanism for handling errors, designed to solve the problems above.
+
+\paragraph{The Core Idea}
+Think of an exception as an emergency signal.
+\begin{enumerate}
+    \item A function (the \emph{callee}) runs into a problem it \textbf{does not know how to deal with} (e.g., the root solver fails).
+    \item It \textbf{"throws" an exception}. This is like pulling a "Solver Failed" fire alarm.
+    \item When an exception is thrown, the function's \textbf{normal execution immediately stops}.
+    \item The C++ runtime system takes over, looking for an "alarm handler" (a \texttt{catch} block).
+    \item If the calling function has a \texttt{catch} block, it can "catch" the exception and handle the emergency.
+    \item If the calling function \emph{doesn't} have a handler, the exception travels \emph{up* the call stack to \emph{its} caller, and so on.}
+    \item If the exception reaches the very top (\texttt{main()}) and is \emph{still} not caught, the program terminates (crashes).
+\end{enumerate}
+This is a good thing! It's a "safety net." The program crashes instead of continuing to run in a broken, undefined state.
+
+\begin{itemize}
+    \item \textbf{Analogy:} The chef (callee) is out of salt. They can't fix this. They pull the "Out of Salt" alarm (\texttt{throw}). All cooking stops. The alarm rings. The waiter (caller) hears it, but they don't know how to handle it, so they let the alarm ring up to the restaurant manager. The manager (\emph{their} caller) \emph{does} have a plan. They "catch" the alarm, and their "handler" code runs: "Apologize to the customer, offer them a different dish." The crisis is handled gracefully.
+\end{itemize}
+
+\subsection{How to \texttt{throw} an Exception}
+The syntax is simple: you use the \texttt{throw} keyword. An exception is just an \textbf{object}. You can throw (almost) anything.
+
+\begin{lstlisting}[language=C++]
+// Example 1: Throwing a C-style string (generally bad practice)
+if (n < 0) {
+    throw "n too small"; // Throws a 'const char*'
+}
+
+// Example 2: Throwing a standard exception object (good practice!)
+#include <stdexcept>
+if (index > max_size) {
+    throw std::range_error("index is out of range");
+}
+\end{lstlisting}
+When you throw an object, the C++ runtime system looks for a \texttt{catch} block that matches the \emph{type} of the object thrown. This is why throwing a \\ \texttt{std::range\_error} object is better than a simple string---it's much easier to catch specifically.
+
+\paragraph{Stack Unwinding}
+This is a crucial concept. When an exception is thrown, the program must "unwind" the stack.
+\begin{itemize}
+    \item \textbf{Analogy:} As the fire alarm rings and propagates \emph{up} from the kitchen to the manager, every worker on each floor (local objects) must follow fire safety rules. They clean up their stations (destructors are called) and evacuate their floor (the function stack frame is destroyed) in an orderly fashion.
+\end{itemize}
+This "automatic cleanup" is one of C++'s most powerful features. It ensures that resources (like open files or allocated memory) are properly released even when an error occurs.
+
+\subsection{The Standard Exception Library: \texttt{<stdexcept>}}
+You should not invent your own error types. C++ provides a rich library of standard exceptions in the \texttt{<stdexcept>} header. They all "inherit" from a base "parent" class called \texttt{std::exception}.
+
+\begin{itemize}
+    \item \textbf{Analogy:} Instead of one generic "Fire Alarm," the standard library gives you specific alarms for "Grease Fire," "Electrical Fire," and "Gas Leak." This lets the handler know \emph{what kind} of emergency it is.
+\end{itemize}
+
+There are two main families:
+\begin{enumerate}
+    \item \textbf{\texttt{std::logic\_error}:} Represents \emph{bugs in your code}. Problems that, in theory, could be prevented.
+    \begin{itemize}
+        \item \texttt{std::invalid\_argument}: You passed a bad value to a function.
+        \item \texttt{std::out\_of\_range}: You tried to access an element that doesn't exist (e.g., \texttt{my\_vector[100]} when the vector only has 10 elements).
+        \item \texttt{std::length\_error}: You tried to create something (like a \\ \texttt{std::vector}) that is too big.
+    \end{itemize}
+    \item \textbf{\texttt{std::runtime\_error}:} Represents errors that happen \emph{during execution} due to external factors you can't always prevent.
+    \begin{itemize}
+        \item \texttt{std::overflow\_error}: A calculation resulted in a number too \emph{large} to store.
+        \item \texttt{std::underflow\_error}: A calculation resulted in a number too \emph{small} to store.
+        \item \texttt{std::range\_error}: A calculation result was invalid.
+    \end{itemize}
+\end{enumerate}
+
+All these objects are created with a string message. You can retrieve this message by calling the \texttt{.what()} member function.
+
+\subsection{How to \texttt{catch} an Exception}
+To handle potential errors, you place "risky" code inside a \textbf{\texttt{try...catch}} block.
+
+\begin{itemize}
+    \item \textbf{Analogy:} The \texttt{try} block is the "Dangerous Work Area" where you know an alarm might be pulled. The \texttt{catch} blocks are the "Emergency Responders" waiting just outside, each one trained to handle a \emph{specific type} of alarm.
+\end{itemize}
+
+\begin{lstlisting}[language=C++]
+#include <iostream>
+#include <stdexcept>
+
+void do_something_risky(int x) {
+    if (x == 1) {
+        throw std::invalid_argument("x cannot be 1!");
+    }
+    if (x == 2) {
+        throw "Some other unknown error"; // Bad practice, but possible
+    }
+}
+
+int main() {
+    try {
+        // --- This is the "Dangerous Work Area" ---
+        std::cout << "Trying risky code..." << std::endl;
+        do_something_risky(1);
+        std::cout << "This line will not be printed." << std::endl;
+    
+    } catch (std::invalid_argument& e) {
+        // --- Responder for "invalid_argument" alarms ---
+        std::cerr << "Caught a specific logic error: " << e.what() << std::endl;
+    
+    } catch (std::exception& e) {
+        // --- Responder for *any other standard* alarm ---
+        // Catches all logic_errors, runtime_errors, etc.
+        std::cerr << "Caught a standard exception: " << e.what() << std::endl;
+    
+    } catch (...) {
+        // --- Responder for *ANYTHING ELSE* (the "catch-all") ---
+        // This catches the "Some other unknown error" string.
+        std::cerr << "Caught an unknown, non-standard error!" << std::endl;
+    }
+    return 0;
+}
+\end{lstlisting}
+
+\paragraph{Key Syntax Points:}
+\begin{itemize}
+    \item \textbf{Order Matters:} The \texttt{catch} blocks are checked in order. You must put the most \emph{specific} handlers first (e.g., \texttt{std::invalid\_argument}) and the most \emph{general} handlers last. \texttt{catch (...)} must always be last.
+    \item \textbf{Catch by Reference (\texttt{\& e}):} We use \texttt{std::exception\& e} to "catch by reference." This avoids making an unnecessary \emph{copy} of the exception object, which is more efficient.
+\end{itemize}
+
+\subsection{Advanced Exception Details}
+
+\paragraph{Re-throwing Exceptions}
+Sometimes, a handler can only \emph{partially} deal with an error. It might log the error, but it can't fully resolve it. In this case, it can "re-throw" the \emph{same} exception up to the next handler.
+
+\begin{itemize}
+    \item \textbf{Analogy:} The restaurant manager hears the "Grease Fire" alarm. They log it in their incident report, but then they pull the \emph{building-wide} fire alarm to evacuate everyone, passing the problem up to the fire department.
+\end{itemize}
+
+\begin{lstlisting}[language=C++]
+catch (std::exception& e) {
+    std::cerr << "Logging error: " << e.what() << std::endl;
+    // We logged it, but we can't fix it. Let the caller deal with it.
+    throw; // A plain 'throw;' re-throws the *original* exception
+}
+\end{lstlisting}
+
+\paragraph{The \texttt{noexcept} Specifier}
+There is one place an exception must \emph{never} be thrown: in a \textbf{destructor}. A destructor is the cleanup function that runs when an object is destroyed (e.g., during stack unwinding).
+If an exception is \emph{already} in flight (during stack unwinding), and a destructor throws a \emph{second} exception, C++ has no way to handle this "double emergency." It will immediately call \texttt{std::terminate()} and crash your program.
+
+By default, destructors are implicitly \texttt{noexcept(true)}. You can also \\ "promise" that a normal function will \emph{never} throw by marking it \texttt{noexcept}. This can help the compiler optimize your code.
+\begin{lstlisting}[language=C++]
+void my_safe_function() noexcept {
+    // This function promises to never throw.
+}
+\end{lstlisting}
+
+\paragraph{Exception Guarantee}
+When you write a function, you must document its "exception guarantee" as part of its "contract" with the user:
+\begin{itemize}
+    \item \textbf{No-throw guarantee:} The strongest promise. "This function will never throw."
+    \item \textbf{Basic guarantee:} "If this function throws, the program state will remain valid, but the object might be changed."
+    \item \textbf{Strong guarantee:} "If this function throws, the program state will be rolled back to \emph{exactly} how it was before the function was called."
+\end{itemize}
+
+\subsection{A Complete Example Walkthrough}
+Let's trace the execution of this program from the slides:
+\begin{lstlisting}[language=C++, firstnumber=102]
+// (Main function from slide)
+int main() {
+    simulation(10, 0.1); // Run simulation for 10 steps
+    return 0;
+}
+// (Simulation function from slide)
+void simulation(int n_steps, double dt) {
+    double t(0.);
+    for (int step = 0; step < n_steps; ++step) {
+        std::cout << "Step " << step << std::endl;
+        try {
+            timeStep(step, dt); // Risky operation
+        }
+        catch (std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+        catch (...) {
+            std::cerr << "Error: I cannot handle... bailing out." << std::endl;
+            throw; // Re-throw the exception
+        }
+        t += dt;
+    }
+}
+// (timeStep function from slide)
+void timeStep(int step, double dt) {
+    if (step == 3 || step == 6) {
+        throw std::domain_error("Solver failed at step " + std::to_string(step));
+    }
+    else if (step == 9) {
+        throw "YOLO!!!"; // Throwing a string
+    }
+    std::cout << "  step " << step << " successful" << std::endl;
+}
+\end{lstlisting}
+
+\paragraph{Execution Trace:}
+\begin{itemize}
+    \item \texttt{main()} calls \texttt{simulation(10, ...)}.
+    \item \textbf{step = 0, 1, 2:} The \texttt{try} block calls \texttt{timeStep()}. The \texttt{if} conditions are false. "step X successful" is printed.
+    \item \textbf{step = 3:} \texttt{try} calls \texttt{timeStep(3, ...)}.
+    \item \texttt{timeStep()} hits the first \texttt{if}. It \textbf{throws a \texttt{std::domain\_error}} object.
+    \item Execution in \texttt{timeStep()} \emph{stops}.
+    \item The runtime looks for a handler in \texttt{simulation()}.
+    \item It finds \texttt{catch (std::exception\& e)}. Since \texttt{std::domain\_error} \emph{is} a \texttt{std::exception}, this block runs.
+    \item It prints "Error: Solver failed at step 3". The \texttt{catch} block finishes. The loop continues.
+    \item \textbf{step = 4, 5:} Normal execution.
+    \item \textbf{step = 6:} Same as step 3. A \texttt{std::domain\_error} is thrown and caught.
+    \item \textbf{step = 7, 8:} Normal execution.
+    \item \textbf{step = 9:} \texttt{try} calls \texttt{timeStep(9, ...)}.
+    \item \texttt{timeStep()} hits the \texttt{else if}. It \textbf{throws \texttt{"YOLO!!!"}} (a \texttt{const char*} string).
+    \item Execution in \texttt{timeStep()} \emph{stops}.
+    \item The runtime looks for a handler in \texttt{simulation()}.
+    \item It checks \texttt{catch (std::exception\& e)}. A string is \emph{not} a \\ \texttt{std::exception}, so this block is \textbf{skipped}.
+    \item It checks \texttt{catch (...)}. This "catch-all" *does* catch the string.
+    \item It prints "Error: I cannot handle... bailing out."
+    \item It then executes \textbf{\texttt{throw;}}. This \textbf{re-throws} the \texttt{"YOLO!!!"} exception.
+    \item The exception now leaves the \texttt{simulation()} function and goes back up to \texttt{main()}.
+    \item \texttt{main()} has \textbf{no \texttt{try...catch} block}.
+    \item The exception is uncaught. The program \textbf{terminates} (crashes).
+\end{itemize}
+
+\newpage
+
+% --- CHAPTER 2: TESTING (from Slides 10-13) ---
+\section{Software Testing: Gaining Confidence in Your Code}
+
+Writing the code is only the first step. The second, equally important step is verifying that it's \emph{correct}.
+
+\begin{center}
+    \emph{"Testing shows the presence, not the absence, of bugs."} \\
+    --- Edsger Dijkstra
+\end{center}
+
+This famous quote is the foundation of software testing.
+\begin{itemize}
+    \item \textbf{Analogy:} Think of testing as a doctor screening for a disease.
+    \item Finding symptoms (a failed test) \emph{proves} the presence of the disease (a bug).
+    \item \emph{Not} finding symptoms (all tests pass) does \emph{not} prove you are perfectly healthy. It only \textbf{increases your confidence} that you are healthy.
+\end{itemize}
+Our goal is not to achieve impossible "proof of correctness," but to gain a high degree of confidence that our code behaves as we expect.
+
+\subsection{Types of Testing}
+
+\paragraph{Unit Testing}
+A "unit" is the smallest testable piece of your program, typically a single function. \textbf{Unit Testing} means testing this function \emph{in isolation}.
+\begin{itemize}
+    \item \textbf{Analogy:} A chef performing a "unit test" on their ingredients. They taste \emph{just} the flour. Then they taste \emph{just} the sugar. They are testing each "unit" in isolation before combining them into a cake.
+    \item \textbf{Example:} For a \texttt{fibonacci(n)} function, you would write separate tests:
+        \begin{itemize}
+            \item Does \texttt{fibonacci(0)} return 0?
+            \item Does \texttt{fibonacci(1)} return 1?
+            \item Does \texttt{fibonacci(5)} return 5?
+            \item Does \texttt{fibonacci(10)} return 55?
+        \end{itemize}
+\end{itemize}
+
+\paragraph{Automated and Regression Testing}
+You shouldn't have to manually run your tests every time. An \textbf{automated test suite} is \emph{another program} whose only job is to run all your unit tests automatically.
+
+This is critical for \textbf{regression testing}. A "regression" is when a new change to the code accidentally \emph{breaks} old, existing features.
+\begin{itemize}
+    \item \textbf{Analogy:} The chef creates a new recipe for cookies. A \emph{regression} would be if this new cookie recipe somehow \emph{broke} the old, perfectly good cake recipe.
+    \item By running the \emph{entire} automated test suite after \emph{every} change, the chef (programmer) gets immediate feedback if their new cookie recipe (new feature) accidentally broke the cake (an old feature).
+\end{itemize}
+
+\paragraph{Testing Frameworks}
+You don't have to build this "robot taster" from scratch. You can use a \textbf{testing framework}---a library that provides all the tools you need to write, run, and report on tests. Popular C++ frameworks include \textbf{GoogleTest} and \textbf{Catch2}.
+
+\subsection{Example: Testing a Fibonacci Function}
+Let's look at the "unit" we want to test. Good code practice separates the \emph{declaration} from the \emph{implementation}.
+
+\paragraph{File 1: \texttt{fibonacci.hpp} (The Header / Interface)}
+This file is the "public menu." It tells other files that the \texttt{fibonacci} function \emph{exists} and what its "signature" (inputs and output) is.
+\begin{lstlisting}[language=C++]
+#pragma once // Prevents this file from being #included twice
+
+// Declares the function. Does not implement it.
+unsigned int fibonacci(unsigned int n);
+\end{lstlisting}
+
+\paragraph{File 2: \texttt{fibonacci.cpp} (The Implementation / Logic)}
+This file contains the "kitchen secrets"---the actual \emph{code} that does the work.
+\begin{lstlisting}[language=C++]
+#include "fibonacci.hpp" // Include the declaration
+
+unsigned int fibonacci(unsigned int n) {
+    if (n == 0) {
+        return 0; // Base case
+    }
+    
+    unsigned int a = 0;
+    unsigned int b = 1;
+    
+    for (unsigned int i = 1; i < n; ++i) {
+        unsigned int next = a + b;
+        a = b;
+        b = next;
+    }
+    
+    return b;
+}
+\end{lstlisting}
+Our test program (e.g., \texttt{fibonacci\_test.cpp}) would \texttt{\#include "fibonacci.hpp"} and check if this implementation works as advertised.
+
+\subsection{CTest: The CMake Test Runner}
+The \textbf{CTest} tool is part of the CMake build system. It is \emph{not} a testing framework (like GoogleTest). It is a \textbf{test runner}.
+
+\begin{itemize}
+    \item \textbf{Analogy:} CTest is the restaurant manager who runs the "robot taster" program. CTest doesn't \emph{do} the tasting. It just runs the \texttt{run\_fib\_tests} executable and waits for a "thumbs up" or "thumbs down."
+    \item \textbf{"Thumbs Up":} The test program exits with \textbf{return code 0}.
+    \item \textbf{"Thumbs Down":} The test program exits with a \textbf{non-zero return code}.
+\end{itemize}
+
+To use it, you add these commands to your \texttt{CMakeLists.txt} file:
+\begin{lstlisting}[language=CMake]
+# 1. Turn on the testing features
+include(CTest)
+enable_testing()
+
+# 2. Tell CMake to build your test program executable
+add_executable(run_fib_tests fibonacci_test.cpp fibonacci.cpp)
+
+# 3. Register that executable as a test with CTest
+# NAME: The human-readable name of the test
+# COMMAND: The executable to run
+add_test(NAME MyFibonacciTest COMMAND run_fib_tests)
+\end{lstlisting}
+After you \texttt{cmake} and \texttt{make} your project, you can now just type \texttt{make test}. CTest will run your \texttt{run\_fib\_tests} program and report "PASSED" or "FAILED" based on its exit code.
+
+\subsection{Catch2: A Real Testing Framework}
+Writing a test program that correctly returns 0 or 1 can be tedious. A framework like \textbf{Catch2} makes it much easier.
+
+Catch2 is a "header-only" library. You just \texttt{\#include "catch.hpp"}. It provides a set of powerful "macros" for defining and checking tests. Here is what \texttt{fibonacci\_test.cpp} would look like using Catch2:
+
+\begin{lstlisting}[language=C++]
+// This one line creates the 'main' function for our test program!
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp" // The Catch2 framework
+
+#include "fibonacci.hpp" // The code we want to test
+
+// TEST_CASE creates a new test.
+TEST_CASE("Fibonacci numbers are computed", "[fibonacci]") {
+    
+    // REQUIRE is the "assertion".
+    // If this check is 'false', Catch2 marks the test as "FAILED"
+    // and prints a detailed report.
+    
+    REQUIRE( fibonacci(0) == 0 );
+    REQUIRE( fibonacci(1) == 1 );
+    REQUIRE( fibonacci(5) == 5 );
+    REQUIRE( fibonacci(10) == 55 );
+    
+    // We could add more sections
+    SECTION("testing larger numbers") {
+        REQUIRE( fibonacci(20) == 6765 );
+    }
+}
+\end{lstlisting}
+This is much cleaner! The \texttt{REQUIRE} macro handles all the "if-then-else-print-error-and-return-1" logic for you.
+
+\newpage
+
+% --- CHAPTER 3: TIMING (from Slides 14-15) ---
+\section{Timing Your Code: The Science of Speed}
+
+A common trap for new programmers is "premature optimization." They \emph{guess} what part of their code is slow and spend hours trying to optimize it, often making the code more complex and harder to read. This is almost always a waste of time.
+
+\begin{center}
+    \textbf{\emph{"Discussions about efficiency are meaningless \\ in the absence of measurements!!!"}}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{Analogy:} You don't "guess" you have a fever. You \emph{measure} it with a thermometer. You don't "guess" your code is slow. You \emph{measure} it with a "profiler" or a "timer." The results will almost always surprise you. The "bottleneck" is rarely where you think it is.
+\end{itemize}
+
+To measure time in C++, you should \emph{not} use the old \texttt{<ctime>} library. You should \emph{always} use the modern, high-precision library: \textbf{\texttt{<chrono>}}.
+
+\subsection{How to Time Code with \texttt{<chrono>}}
+The \texttt{<chrono>} library gives you access to different "clocks." The one you want for performance measurement is \texttt{std::chrono::high\_resolution\_clock}.
+
+The pattern for timing a piece of code is simple:
+\begin{enumerate}
+    \item Get the time \emph{before} the code.
+    \item Run the code.
+    \item Get the time \emph{after} the code.
+    \item Calculate the difference.
+\end{enumerate}
+
+\begin{lstlisting}[language=C++]
+#include <iostream>
+#include <chrono>
+
+// A function that just wastes some time
+void long_running_function() {
+    for (volatile int i = 0; i < 100000000; ++i);
+}
+
+int main() {
+    // 1. Get the time *before*
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // 2. Run the code you want to time
+    long_running_function();
+
+    // 3. Get the time *after*
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // 4. Calculate the difference
+    // We ask for the duration as a <double> in units of (seconds).
+    std::chrono::duration<double> elapsed = end - start;
+
+    std::cout << "The code took: " 
+              << elapsed.count() << " seconds." << std::endl;
+}
+\end{lstlisting}
+In this code, \texttt{auto} is a C++ keyword that automatically figures out the (very complex) type of the \texttt{start} and \texttt{end} time-points. The \texttt{elapsed.count()} function returns the final duration as a simple \texttt{double}.
+
+\paragraph{The Most Important Advice}
+\textbf{Never trust a single measurement.} Your computer is a chaotic place. The operating system is constantly running other tasks in the background (checking for emails, updating files, etc.). These "other activities" can interfere with your measurement, making your code seem slower than it is.
+
+\begin{itemize}
+    \item \textbf{Analogy:} You don't just take your temperature once. You take it a few times to make sure you get a stable reading.
+\end{itemize}
+
+To get a reliable result, you \emph{must} run your timing test many times (e.g., 100 times in a loop) and then calculate the \textbf{average} or (often better) the \textbf{minimum} time. The minimum is often preferred because it represents the "purest" run, the one with the least interference from the operating system.
+
+\newpage
+
+% --- CHAPTER 4: MONTE CARLO (from Slides 16-37) ---
+\section{Monte Carlo Methods: Solving Problems with Randomness}
+We now move to a powerful class of algorithms that are essential to modern simulation: \textbf{Monte Carlo Methods}.
+
+These are algorithms that use \textbf{random sampling} to get numerical results. They are named after the famous casino in Monaco, as they are based on the same principles of chance and randomness as games like roulette or dice.
+
+\paragraph{The Core Analogy: The Area of a Lake}
+Imagine you need to find the area of a large, complexly-shaped lake.
+\begin{itemize}
+    \item \textbf{The "Calculus" Method:} You could try to find a mathematical function $f(x)$ that describes the lake's shore, and then integrate it. This would be incredibly difficult, maybe impossible.
+    \item \textbf{The "Monte Carlo" Method:}
+        \begin{enumerate}
+            \item Build a perfectly square fence (e.g., 1km $\times$ 1km) around the entire lake. You know the area of this square: 1 $km^2$.
+            \item Fly over the square in a helicopter and drop 1,000,000 random "markers" (e.g., paintballs).
+            \item Wait for the markers to land, then count how many landed \emph{in the lake}.
+            \item Let's say you find that 400,000 markers (i.e., 40\%) landed in the lake.
+            \item You can now estimate the lake's area: it must be 40\% of the square's area.
+            $$ \text{Area}_{\text{lake}} \approx 0.40 \times \text{Area}_{\text{square}} = 0.40 \times 1 \text{ km}^2 = 0.4 \text{ km}^2 $$
+        \end{enumerate}
+\end{itemize}
+This technique uses \emph{randomness} to solve a completely \emph{deterministic} problem. This simple idea is used everywhere: physics, finance, weather forecasting, and, as we'll see, integration. But it all hinges on one thing: a good source of \textbf{random numbers}.
+
+\subsection{The Problem: Multidimensional Integration}
+In calculus, "integration" is just finding the area under a curve. For a 1-dimensional function $f(x)$, we can use traditional methods like the \textbf{Simpson Method}.
+\begin{itemize}
+    \item \textbf{Analogy (Traditional):} These methods work by laying down a \emph{fixed, regular grid} of "tiles" (like tiny rectangles) under the curve and summing their areas.
+\end{itemize}
+In 1D, these methods are \emph{excellent}. Their error (how "wrong" the answer is) decreases as $O(N^{-4})$, where $N$ is the number of tiles. If you double the tiles, your error gets $2^4 = 16$ times smaller!
+
+\paragraph{The Curse of Dimensionality}
+The problem comes when we move to higher dimensions ($d$). What if we want to integrate a function in a 10-dimensional "hyper-volume"?
+\begin{itemize}
+    \item \textbf{Analogy (The Curse):} Try to tile a 1-dimensional line. Easy. Now try to tile a 2D floor. You need $N^2$ tiles. Now a 3D room? $N^3$ tiles. A 10D hyper-room? You need $N^{10}$ tiles. The number of tiles you need \textbf{explodes exponentially}. This is the "Curse of Dimensionality."
+\end{itemize}
+The error for the Simpson method gets exponentially worse with dimension: $O(N^{-4/d})$.
+\begin{itemize}
+    \item For $d=1$ (1D): Error is $O(N^{-4})$. (Amazing!)
+    \item For $d=8$ (8D): Error is $O(N^{-4/8}) = O(N^{-0.5})$. (Okay.)
+    \item For $d=10$ (10D): Error is $O(N^{-4/10}) = O(N^{-0.4})$. (Terrible!)
+\end{itemize}
+
+\subsection{The Solution: Monte Carlo Integration}
+Monte Carlo integration saves us from this curse. It's the "lake" analogy applied to a function.
+\begin{itemize}
+    \item \textbf{Traditional (Top Image):} Uses a fixed, regular grid.
+    \item \textbf{Monte Carlo (Bottom Image):} Instead of a grid, it picks $N$ \textbf{random points} $x_i$. It calculates the \emph{average value} of the function at these random points, and multiplies by the width of the interval.
+\end{itemize}
+
+\paragraph{The Punchline (Error Scaling)}
+The error for Monte Carlo integration is a "statistical" error. It scales as:
+$$ \text{Error} = O(N^{-1/2}) = O\left(\frac{1}{\sqrt{N}}\right) $$
+Crucially, this error rate is \textbf{independent of the number of dimensions $d$!}
+
+Let's compare again for a 10-dimensional integral:
+\begin{itemize}
+    \item \textbf{Simpson's Error:} $O(N^{-0.4})$
+    \item \textbf{Monte Carlo Error:} $O(N^{-0.5})$
+\end{itemize}
+The Monte Carlo error is \emph{better} (it decreases faster). As the slide notes, Monte Carlo beats grid-based methods for any $d > 8$. In scientific simulations, $d$ can be thousands or millions, so Monte Carlo is the \emph{only} method that works.
+
+\subsection{Example: Calculating $\pi$ with Monte Carlo}
+This is the "Hello, World!" of Monte Carlo methods. It's the lake analogy, but with a circle.
+\begin{enumerate}
+    \item Imagine a 1x1 square (Total Area = 1).
+    \item Inside it, draw a quarter-circle of radius 1 (Area = $\pi \cdot r^2 / 4 = \pi / 4$).
+    \item The \emph{ratio} of the circle's area to the square's area is $(\pi/4) / 1 = \pi/4$.
+\end{enumerate}
+
+\paragraph{The Algorithm:}
+\begin{enumerate}
+    \item Generate two random numbers, $x$ and $y$, both between 0 and 1. This is your "random marker" at coordinate $(x, y)$.
+    \item Check if the marker is \emph{inside} the circle. The equation for a circle is $x^2 + y^2 = r^2$. Since $r=1$, we just check if: $x^2 + y^2 \le 1$.
+    \item Repeat this $N$ times (e.g., 1,000,000 times). Count how many markers landed \emph{inside} ($N_{inside}$).
+    \item The ratio of "hits" to "total" is an estimate for the ratio of the areas:
+    $$ \frac{N_{inside}}{N} \approx \frac{\text{Area}_{\text{circle}}}{\text{Area}_{\text{square}}} = \frac{\pi}{4} $$
+    \item Therefore, we can estimate $\pi$:
+    $$ \pi \approx 4 \times \frac{N_{inside}}{N} $$
+\end{enumerate}
+This entire method depends on a good source of random $x$ and $y$ numbers.
+
+\subsection{What is a "Random" Number?}
+We need to understand what we mean by "random."
+\begin{enumerate}
+    \item \textbf{"True" Random Numbers:} These come from unpredictable \emph{physical processes}---atmospheric noise, radioactive decay, thermal noise in a circuit.
+    \begin{itemize}
+        \item \textbf{Analogy:} Rolling a \emph{real}, physical, perfectly balanced die.
+        \item \textbf{Pros:} Truly unpredictable.
+        \item \textbf{Cons:} Slow to generate, requires special hardware.
+    \end{itemize}
+    \item \textbf{"Pseudo-Random" Numbers (PRNG):} This is what 99.9\% of computing uses. They are generated by a \textbf{deterministic algorithm}.
+    \begin{itemize}
+        \item \textbf{Analogy:} A giant, 10-million-page book full of pre-recorded die rolls. The "algorithm" is just reading the next number from the book.
+        \item They are \textbf{not random at all!} They are 100\% deterministic.
+        \item If you give the algorithm the same starting value (the "seed"), it will produce the \textbf{exact same sequence} of numbers, every single time.
+    \end{itemize}
+\end{enumerate}
+This determinism is actually a \emph{feature}, not a bug. It means our simulations are \textbf{reproducible}. A scientist who finds a bug can re-run the simulation with the \emph{exact same} "random" numbers to debug it. The goal is just to make the algorithm's output \emph{look} random and pass statistical tests for randomness.
+
+\subsection{How PRNGs Work: The LCG}
+A simple (and often flawed) example of a PRNG is the \textbf{Linear Congruential Generator (LCG)}. It uses a simple formula to get the \emph{next} number ($x_{n+1}$) from the \emph{current} one ($x_n$):
+$$ x_{n+1} = (a \cdot x_n + c) \pmod m $$
+\begin{itemize}
+    \item $x_0$ is the \textbf{"seed"} (the starting page in the book).
+    \item $a$ is the \textbf{"multiplier"}.
+    \item $c$ is the \textbf{"increment"}.
+    \item $m$ is the \textbf{"modulus"} (this "wraps around" the number, keeping it from growing forever).
+\end{itemize}
+\begin{itemize}
+    \item \textbf{Analogy:} This is a "scrambler" machine. You put in a number $x_n$. It multiplies, adds, and then "wraps it around" (mod $m$) to get a new, "scrambled" number $x_{n+1}$.
+\end{itemize}
+All PRNGs eventually repeat. The "period" (how long the sequence is before it repeats) is at most $m$. A good generator has an \emph{enormous} $m$. The plots in the slides (23-28) show how this deterministic sequence \emph{appears} to be random.
+
+\subsection{The Modern C++ \texttt{<random>} Library}
+You \emph{must not} write your own LCG. It's very easy to get wrong. Instead, you \emph{must} use the professional, high-quality tools provided in the C++11 \textbf{\texttt{<random>}} header.
+
+This library has a very important two-part design.
+\begin{itemize}
+    \item \textbf{Analogy:} Think of generating random numbers as an "oil-refining" process.
+    \begin{enumerate}
+        \item \textbf{Engines (Generators):} This is the "crude oil pump." Its only job is to pump out raw, unrefined, uniformly-distributed \emph{unsigned integers} (e.g., big numbers between 0 and 4,294,967,295).
+        \item \textbf{Distribution Functions:} This is the "oil refinery." It takes the "crude oil" from the engine and \emph{transforms} it into the "refined fuel" you actually want (e.g., gasoline, diesel, jet fuel).
+    \end{enumerate}
+\end{itemize}
+You \emph{always} need both parts: an \textbf{Engine} and a \textbf{Distribution}.
+
+\subsection{Step 1: Choose Your Engine}
+C++ provides several "crude oil pumps."
+\begin{itemize}
+    \item \texttt{std::linear\_congruential\_engine}: The LCG we just saw. (A "hand-cranked, leaky pump").
+    \item \texttt{std::mersenne\_twister\_engine}: A much more powerful, high-quality generator with a \emph{massive} period. \textbf{This is the one you should use.}
+    \item \texttt{std::mt19937}: This is the standard, pre-packaged 32-bit Mersenne Twister. It's the "industrial-grade" pump. Use this one.
+\end{itemize}
+All engines share the same "buttons":
+\begin{itemize}
+    \item \texttt{std::mt19937 my\_engine;}: Creates the engine.
+    \item \texttt{my\_engine.seed(42);}: Sets the "seed" (the starting point).
+    \item \texttt{my\_engine()}: "Turns the crank" to get the \emph{next} raw integer.
+\end{itemize}
+
+\subsection{Step 2: Seed Your Engine}
+This is a \emph{critical} step. If you don't seed your engine, it will use the \emph{same default seed} every time, giving you the \emph{same "random" sequence} every time you run your program.
+\begin{lstlisting}[language=C++]
+#include <random>
+std::mt19937 my_engine; // Create the engine
+my_engine.seed(42);     // Seed it
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Analogy:} The seed is the \emph{starting page number} in the 10-million-page book of die rolls. \texttt{seed(42)} tells the machine to "start reading from page 42."
+\end{itemize}
+
+\subsection{Step 3: Choose Your Distribution (The "Refinery")}
+Now you choose the "refinery" to transform the engine's raw integers into the numbers you \emph{actually} want.
+\begin{itemize}
+    \item \texttt{std::uniform\_int\_distribution<int> die\_roll(1, 6);}
+    \begin{itemize}
+        \item \textbf{The "Die Roller" refinery.} Takes crude oil and gives you an integer, with equal probability, from 1 to 6.
+    \end{itemize}
+    \item \texttt{std::uniform\_real\_distribution<double> unit\_dist(0.0, 1.0);}
+    \begin{itemize}
+        \item \textbf{The "0-to-1" refinery.} Takes crude oil and gives you a \texttt{double} (a decimal), with equal probability, between 0.0 and 1.0. \textbf{This is what you need for the $\pi$ example.}
+    \end{itemize}
+    \item \texttt{std::normal\_distribution<double> bell\_curve(100.0, 15.0);}
+    \begin{itemize}
+        \item \textbf{The "Bell Curve" refinery.} Takes crude oil and gives you a \texttt{double} centered around a \emph{mean} value (e.g., 100.0) with a \emph{standard deviation} or "spread" (e.g., 15.0). This is vital for modeling natural phenomena like measurement errors or human heights.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Step 4: Put It All Together (The $\pi$ Example)}
+Here is the full, correct, modern C++ code to generate the random $(x, y)$ pairs for our $\pi$ calculation.
+
+\begin{lstlisting}[language=C++]
+#include <iostream>
+#include <random>
+
+int main() {
+    // === 1. SETUP (Do this ONCE at the start) ===
+
+    // 1a. Create and seed the ENGINE (the "crude oil pump")
+    std::mt19937 my_engine;
+    my_engine.seed(42); // Use a fixed seed for reproducibility
+
+    // 1b. Create the DISTRIBUTION (the "0-to-1 refinery")
+    std::uniform_real_distribution<double> my_dist(0.0, 1.0);
+
+
+    // === 2. USAGE (Do this inside your loop) ===
+
+    // To get a number, you pass the ENGINE *to* the DISTRIBUTION
+    // This is the "crank" that runs the whole machine.
+    double x = my_dist(my_engine); 
+    double y = my_dist(my_engine);
+
+    std::cout << "Random pair: (" << x << ", " << y << ")" << std::endl;
+    
+    // ... then check if (x*x + y*y <= 1.0) ...
+}
+\end{lstlisting}
+
+\subsection{Best Practices for Random Numbers}
+This is a summary of the most important rules.
+\begin{enumerate}
+    \item \textbf{Rule 1: Create ONE engine, and seed it ONCE.} A \emph{very} common mistake is to create a new \texttt{std::mt19937} engine \emph{inside} the loop.
+    \begin{itemize}
+        \item \textbf{Analogy:} Don't build a brand-new, multi-million dollar oil pump every time you need one drop of oil. Build \emph{one} pump at the start, and just keep \emph{cranking} it.
+    \end{itemize}
+    \item \textbf{Rule 2: PRINT YOUR SEED.} If your simulation uses a seed from the user or from \texttt{std::random\_device} (a "true random" source), \emph{print it to your log file!}
+    \begin{itemize}
+        \item \textbf{Analogy:} If your simulation discovers a "miracle" (a bug or a Nobel-prize-winning result), but you used a "secret" seed and didn't write it down, \textbf{you can never reproduce it.} It is lost forever. Always log your seed: "Simulation running with seed: 8675309".
+    \end{itemize}
+    \item \textbf{Rule 3: Try several generators.} If your scientific conclusion \emph{changes} when you swap \texttt{std::mt19937} for \texttt{std::ranlux48}, you have a serious problem. Your result should not be an artifact of the specific PRNG you chose.
+\end{enumerate}
+
+\newpage
+
+% --- CHAPTER 5: DOCUMENTATION (from Slides 38-43) ---
+\section{Documentation: Writing Code for Humans}
+The final topic is documentation. It's often overlooked, but it's what separates a "disposable script" from "professional, reusable software."
+
+You are not just writing code for the compiler. You are writing it for other people. And the most important "other person" you're writing for is \textbf{yourself, six months from now}, when you've forgotten everything about this code.
+
+\subsection{The "Contract" for a Function}
+Good documentation for a function acts as a "contract" between the function (the \emph{callee}) and the user (the \emph{caller}). It should answer these questions:
+
+\begin{itemize}
+    \item \textbf{Synopsis:} The function's signature. (What is its name and what are its parameters?)
+    \item \textbf{Semantics:} What does it \emph{do}? (A plain-English summary.)
+    \item \textbf{Requirements:} (For templates) What are the rules for the template types?
+    \item \textbf{Preconditions:} What \emph{must} be true \emph{before} I am called? (This is the caller's part of the contract. e.g., "The pointer must not be null," "bins must be > 0").
+    \item \textbf{Postconditions:} What do I \emph{promise} will be true \emph{after} I finish? (This is the function's part of the contract. e.g., "The vector will be sorted.")
+    \item \textbf{Exception guarantees:} What "alarms" (exceptions) might I \texttt{throw} if you (the caller) break your preconditions?
+    \item \textbf{References:} Any links to papers or web pages that explain the algorithm.
+\end{itemize}
+
+\subsection{Doxygen: The Automatic Documentation Generator}
+You don't just write this documentation in a random text file. You write it as \emph{special comments directly in your source code}.
+
+A tool called \textbf{Doxygen} can then parse your entire project.
+\begin{itemize}
+    \item \textbf{Analogy:} Doxygen is a "robot librarian." You put special "comment cards" in your code, right above your functions. When you run Doxygen, the robot scans your \emph{entire} codebase, collects all these cards, and automatically builds a beautiful, hyperlinked, searchable \textbf{HTML website} (the "card catalog") that documents your entire project.
+\end{itemize}
+This is how \emph{all} professional C++ libraries (like Boost, Eigen, etc.) create their online API documentation.
+
+\subsection{Doxygen Syntax Example}
+Doxygen comments start with \texttt{/**} or \texttt{///}. Its commands start with an \texttt{@} or \texttt{\\} symbol.
+
+Here is the \texttt{integrate} function from a previous lecture, fully documented for Doxygen:
+
+\begin{lstlisting}[language=C++]
+/**
+ * @brief Computes the integral of a 1D function using Simpson's rule.
+ *
+ * @details
+ * This function approximates the integral of the given callable 'func'
+ * from 'a' to 'b' using the composite Simpson rule with 'bins' intervals.
+ *
+ * @tparam F The type of the callable object (e.g., a function, a lambda).
+ * Must be callable with a 'T' and return a 'T'.
+ * @tparam T The arithmetic type (e.g., double, float).
+ *
+ * @param a    The lower integration limit.
+ * @param b    The upper integration limit.
+ * @param bins The number of subintervals (must be > 0).
+ * @param func The callable object representing the function f(x).
+ *
+ * @pre
+ * The function 'func' must be valid on the interval [min(a,b), max(a,b)].
+ * @pre
+ * 'bins' must be greater than 0.
+ *
+ * @post
+ * The return value will approximate the integral.
+ *
+ * @return An approximation of the integral of func(x) from a to b.
+ *
+ * @throws Nothing. (This function is no-throw)
+ *
+ * @see
+ * Standard composite Simpson rule, e.g., Numerical CSE course notes.
+ */
+template <typename F, typename T>
+T integrate(const T a, const T b, const unsigned bins, const F& func) {
+    // ... implementation goes here ...
+}
+\end{lstlisting}
+When you run Doxygen, it will parse this comment and build a beautiful webpage for your \texttt{integrate} function.
+
+\subsection{Integrating with CMake}
+Your \texttt{CMakeLists.txt} file can be configured to find the Doxygen program and add a new "target." This means you can simply type \texttt{make doc}, and CMake will automatically run Doxygen to build or update your documentation website.
+
+Doxygen can also use \textbf{Markdown} files (like \texttt{mainpage.md}) to create the "homepage" for your documentation, where you can explain what the project is, how to compile it, and how to run it.
+
+% --- PASTE THIS CODE AT THE END OF SECTION 5 ---
+
+\subsection{A Practical Guide to Using Doxygen}
+
+As we've discussed, Doxygen is a "robot librarian" that builds a professional website from comments in your code. Let's walk through the exact, practical steps to make this work, from writing the comments to automating the process.
+
+\paragraph{Where to Write Doxygen Comments}
+The short answer: \textbf{Write your documentation in your header files (\texttt{.hpp} or \texttt{.h})}, directly above the code you are documenting.
+
+\begin{itemize}
+    \item \textbf{Analogy:} Your header file (\texttt{.hpp}) is the \textbf{public menu} for your restaurant. Your source file (\texttt{.cpp}) is the \textbf{private kitchen}.
+    \item Customers (other programmers) should only ever look at the menu. They don't need to see the messy details in the kitchen.
+    \item By documenting the header, you are writing the "contract" or "menu description" for your class, telling users \emph{what it does}, not \emph{how it does it}.
+\end{itemize}
+
+\paragraph{How to Write Doxygen Comments: An Example}
+Let's fully document the \texttt{Timer} class we designed earlier. Doxygen comments start with \texttt{/**} or \texttt{///}.
+
+Here is what your \texttt{Timer.hpp} file should look like:
+
+\begin{lstlisting}[language=C++]
+/**
+ * @file Timer.hpp
+ * @brief Declares a high-resolution timer class for performance monitoring.
+ * @author (Your Name)
+ * @date 2023-10-27
+ */
+
+#pragma once
+
+#include <chrono>
+#include <stdexcept> // For std::runtime_error
+
+// Define aliases to make the types clean
+using Clock = std::chrono::high_resolution_clock;
+using TimePoint = std::chrono::time_point<Clock>;
+
+/**
+ * @class Timer
+ * @brief A simple stopwatch-style timer.
+ *
+ * @details This class models a stopwatch. It starts in a "stopped"
+ * state. You must call start() before you can call end().
+ * This is a practical example of a "state machine" (it has
+ * two states: "running" and "stopped").
+ */
+class Timer {
+public:
+    /**
+     * @brief Default constructor.
+     * Initializes the timer to a valid "stopped" state.
+     */
+    Timer() : m_startTime(), m_isRunning(false) {}
+
+    /**
+     * @brief Starts the timer.
+     * Captures the current time and sets the state to "running".
+     */
+    void start() {
+        m_startTime = Clock::now();
+        m_isRunning = true;
+    }
+
+    /**
+     * @brief Stops the timer and returns the elapsed time.
+     *
+     * @return The elapsed time in seconds as a 'double'.
+     *
+     * @throws std::runtime_error If the timer was not in the
+     * "running" state (i.e., if start() was not called).
+     */
+    double end() {
+        if (!m_isRunning) {
+            throw std::runtime_error("Timer::end() called before Timer::start()");
+        }
+
+        TimePoint endTime = Clock::now();
+        std::chrono::duration<double> diff = endTime - m_startTime;
+        m_isRunning = false; // Return to "stopped" state
+        return diff.count();
+    }
+
+private:
+    TimePoint m_startTime;  ///< The timepoint when start() was called.
+    bool m_isRunning;       ///< Flag to track the timer's state.
+};
+\end{lstlisting}
+
+\paragraph{How to Generate the Documentation (Manually)}
+Doxygen is a command-line tool. You can run it manually to see the results.
+
+\begin{enumerate}
+    \item \textbf{Generate a config file:} Open your terminal in your project's main directory and run:
+    \begin{lstlisting}[language=bash]
+doxygen -g Doxyfile
+    \end{lstlisting}
+    This creates a (very large) configuration file named \texttt{Doxyfile}.
+
+    \item \textbf{Edit the \texttt{Doxyfile}:} Open this text file. You only need to change a few key settings. Find these lines and edit them:
+    \begin{itemize}
+        \item \texttt{PROJECT\_NAME = "My Scientific Simulation"}
+        \item \texttt{OUTPUT\_DIRECTORY = ./doc} (This is where the HTML site will go)
+        \item \texttt{INPUT = .} (Tell Doxygen to scan the current directory)
+        \item \texttt{RECURSIVE = YES} (Tell Doxygen to look inside all subfolders)
+        \item \texttt{GENERATE\_HTML = YES} (We want a website)
+        \item \texttt{EXTRACT\_PRIVATE = NO} (We only want to document the public API)
+    \end{itemize}
+
+    \item \textbf{Run Doxygen:} Now, just run the \texttt{doxygen} command in that same directory:
+    \begin{lstlisting}[language=bash]
+doxygen Doxyfile
+    \end{lstlisting}
+\end{enumerate}
+
+You will now have a new folder named \texttt{doc}. Open \texttt{doc/html/index.html} in your web browser. You will see a beautiful, searchable website documenting your \texttt{Timer} class!
+
+\paragraph{How to Integrate with CMake (The Automatic Way)}
+Running Doxygen by hand is annoying. We want to just type \texttt{make doc}. This is a perfect job for CMake (as mentioned on Slide 42).
+
+Add the following code to your \texttt{CMakeLists.txt} file:
+
+\begin{lstlisting}[language=CMake]
+# --- Doxygen Integration ---
+# Find the Doxygen program on your system
+find_package(Doxygen REQUIRED)
+
+# This assumes you have a "Doxyfile" in your project's root folder
+# (the one containing this CMakeLists.txt)
+if(DOXYGEN_FOUND)
+    # Add a new "target" (a new command) to your Makefile.
+    # This command will not be run by default.
+    add_custom_target(doc
+        # The command to run:
+        COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+        
+        # Where to run the command from:
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        
+        # A nice message to print:
+        COMMENT "Generating API documentation with Doxygen"
+        
+        # This makes 'doc' a "phony" target, not a real file
+        VERBATIM
+    )
+    
+    # Optional: Print a helpful message
+    message(STATUS "Doxygen found - 'make doc' target is available.")
+endif()
+# --- End of Doxygen Integration ---
+\end{lstlisting}
+
+Now, after you run \texttt{cmake} and \texttt{make} to build your project, you can simply run:
+\begin{lstlisting}[language=bash]
+wslview html/index.html
+\end{lstlisting}
+This will open the index of your documentation in an \texttt{html} viewer such as Chrome.
+
+\paragraph{Adding a Main Page (Slide 43)}
+Your documentation needs a "homepage." The easiest way is to use a Markdown file.
+
+\begin{enumerate}
+    \item \textbf{Create a file} in your project's root directory named \texttt{mainpage.md}.
+    \item \textbf{Write your homepage content} in this file:
+\end{enumerate}
+
+\begin{lstlisting}[language=Markdown]
+# Welcome to My Scientific Simulation!
+
+This is the main page for the documentation of our project.
+
+This project simulates... (your description here).
+
+## How to Compile
+To compile the project, run the following commands:
+
+mkdir build
+cd build
+cmake ..
+make
+
+## How to Run
+The main executable is simulation:
+
+./simulation
+\end{lstlisting}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item \textbf{Tell Doxygen to use it:} Open your \texttt{Doxyfile} and edit this line:
+    \begin{lstlisting}
+# This tells Doxygen to use your .md file as the index.html page
+USE_MDFILE_AS_MAINPAGE = mainpage.md
+    \end{lstlisting}
+\end{enumerate}
+
+Now, when you run \texttt{make doc}, Doxygen will generate the same website as before, but the homepage will be your beautifully formatted \texttt{mainpage.md} file. This provides a professional entry-point for anyone using your code.
+
+% --- CONCLUSION ---
+
+\section{Conclusion}
+
+This chapter has covered five essential skills for writing professional scientific software. We learned how to:
+\begin{itemize}
+    \item \textbf{Handle Errors} gracefully using the C++ \texttt{try/throw/catch} exception system, which is far more robust than old C-style error codes.
+    \item \textbf{Gain Confidence} in our code's correctness by writing \texttt{unit tests} and using frameworks like CTest and Catch2 to automate them.
+    \item \textbf{Measure Performance} accurately using the \texttt{<chrono>} library, allowing us to find and fix real bottlenecks instead of guessing.
+    \item \textbf{Use Randomness} safely and effectively using the C++ \texttt{<random>} library's \texttt{Engine/Distribution} model, which is the key to Monte Carlo methods.
+    \item \textbf{Write for Humans} by documenting our code's "contract" using tools like Doxygen, ensuring our code is readable and maintainable.
+\end{itemize}
+These techniques form the foundation upon which all complex, reliable, and efficient scientific simulations are built.
+
+\end{document}
+% --- END OF DOCUMENT ---

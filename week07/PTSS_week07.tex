@@ -1,0 +1,1141 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}  % For \toprule, \midrule, \bottomrule in tables
+%\usepackage{listings-cmake}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for C++
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C++,
+    morecomment=[l]{//}, % Explicitly define C++ line comments
+    morecomment=[s]{/*}{*/} % Explicitly define C block comments
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page (keep week-specific title below)
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Lecture Notes: Algorithms, Data Structures, and Plotting},
+    pdfpagemode=FullScreen,
+}
+
+% --- Title Page (preserve Week 7 title) ---
+\makeatletter
+\def\@title{Programming Techniques for Scientific Simulations I \\\ \vspace{1cm} \Large Week 7: Algorithms, Data Structures, and Plotting}
+\makeatother
+\author{Detailed Lecture Notes}
+
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\part{Algorithms and Data Structures in C++ (week07a)}
+
+\section{Complexity Analysis: Measuring Efficiency}
+
+\subsection{The Core Question}
+(Slide 2)
+
+When we write a program, it's not enough for it to be \textit{correct}. It must also be \textit{efficient}. "Efficiency" can mean many things (memory usage, disk I/O), but most often it means \textbf{time}. We want our algorithms to be fast.
+
+The core question of \textbf{complexity analysis} is:
+\begin{quote}
+    \textit{"How does the time needed for an algorithm scale with the problem size $N$?"}
+\end{quote}
+
+Here, $N$ is the "problem size." If you're sorting a list, $N$ is the number of items. If you're searching a database, $N$ is the number of entries. We don't measure time in seconds, because that changes when you buy a faster computer. We measure time in the \textit{number of operations} as a \textit{function} of $N$.
+
+\paragraph{Real-World Analogy: A Recipe}
+Imagine $N$ is the number of guests coming to dinner.
+\begin{itemize}
+    \item A $O(1)$ (constant) algorithm: The recipe takes 30 minutes, whether you have 1 guest or 100. (e.g., "Pre-heat the oven").
+    \item A $O(N)$ (linear) algorithm: The recipe takes 5 minutes per guest. (e.g., "Chop 1 potato per guest"). Double the guests, double the time.
+    \item A $O(N^2)$ (quadratic) algorithm: You must introduce every guest to every other guest. Double the guests, and you quadruple the introduction time.
+\end{itemize}
+
+We analyze this scaling in a few different ways:
+\begin{itemize}
+    \item \textbf{Worst Case Analysis:} This is the most common. It answers, "What is the \textit{maximum} possible time your algorithm will take for a given $N$?" This is a guarantee. (Analogy: "How long to find a name in the phone book?" Worst case: It's the very last name.)
+    \item \textbf{Best Case Analysis:} What is the \textit{minimum} possible time? (Analogy: The name is the very first one.)
+    \item \textbf{Average Case Analysis:} What is the \textit{typical} time? This is often more useful but is much harder to calculate.
+    \item \textbf{Amortized Analysis:} What is the average time over a \textit{sequence} of many operations? We will see this is very important for `std::vector`.
+\end{itemize}
+
+\subsection{Asymptotic Notation: The Language of Complexity}
+(Slide 3)
+
+We use a special mathematical notation to describe complexity. This notation ignores constant factors and lower-order terms, focusing only on the \textit{dominant term} that dictates the scaling behavior as $N$ becomes very large.
+
+\subsubsection{O / Big-Oh (Worst Case Upper Bound)}
+This is the most common notation. It describes the \textbf{upper bound} or the \textbf{worst-case} scenario.
+\begin{itemize}
+    \item \textbf{Definition:} An algorithm is $O(f(N))$ if its runtime $t(N)$ is \textit{always less than} some constant $c$ times $f(N)$ (for a large enough $N$).
+    \item \textbf{Analogy:} Think of it as a \textbf{speed limit for slowness}. A $O(N^2)$ algorithm is \textit{guaranteed} to be no worse than quadratic. It might be faster (it could be $O(N)$), but it will never be $O(N^3)$.
+    \item \textbf{Consequences:}
+        \begin{enumerate}
+            \item \textbf{We ignore constants.} $O(2N)$ and $O(1000N)$ are both just $O(N)$. Why? Because as $N$ goes to infinity, the \textit{linear} nature is what matters, not the slope.
+            \item \textbf{We keep the dominant term.} An algorithm that takes $N^2 + 50N + 1000$ steps is just $O(N^2)$.
+        \end{enumerate}
+    \item \textbf{Analogy for Dominant Terms:} Imagine you are building a skyscraper ($N$ floors) and also painting the lobby. The time to build the $N$ floors scales quadratically ($N^2$). The time to paint the lobby is constant. As $N$ (the number of floors) gets huge, the lobby-painting time becomes completely irrelevant to the total project time. The $N^2$ term "dominates" everything else.
+\end{itemize}
+
+\subsubsection{$\Omega$ / Big-Omega (Best Case Lower Bound)}
+This describes the \textbf{lower bound} or the \textbf{best-case} scenario.
+\begin{itemize}
+    \item \textbf{Definition:} An algorithm is $\Omega(f(N))$ if its runtime $t(N)$ is \textit{always greater than} some constant $c$ times $f(N)$.
+    \item \textbf{Analogy:} This is a \textbf{guarantee of work}. It says, "No matter how lucky you get, this algorithm will \textit{never be faster than} $f(N)$."
+\end{itemize}
+
+\subsubsection{$\Theta$ / Big-Theta (Tight Bound)}
+This is used when the worst case and best case are the same.
+\begin{itemize}
+    \item \textbf{Definition:} An algorithm is $\Theta(f(N))$ if it is \textit{both} $O(f(N))$ and $\Omega(f(N))$.
+    \item \textbf{Analogy:} This is an \textbf{exact price}. The algorithm will \textit{always} take this amount of time to scale, no matter what the input.
+\end{itemize}
+
+\subsection{The Real-World Impact of Complexity}
+(Slides 4, 5, 6)
+
+These notations aren't just academic. They have profound, practical consequences. Let's assume a computer can perform 1 billion operations per second ($1 \text{ G-op/s}$).
+
+\begin{table}[h!]
+\centering
+\caption{Time taken assuming 1 G-op/s (Slide 4)}
+\label{tab:1gops}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{Complexity} & \textbf{N=10} & \textbf{N=100} & \textbf{N=1,000} & \textbf{N=1,000,000} & \textbf{N=1,000,000,000} \\ \midrule
+$O(1)$ & 1 ns & 1 ns & 1 ns & 1 ns & 1 ns \\
+$O(\ln N)$ & 3 ns & 7 ns & 10 ns & 20 ns & 30 ns \\
+$O(N)$ & 10 ns & 100 ns & 1 $\mu$s & 1 ms & 1 s \\
+$O(N \ln N)$ & 30 ns & 700 ns & 10 $\mu$s & 20 ms & 30 s \\
+\textbf{$O(N^2)$} & 100 ns & 10 $\mu$s & 1 ms & \textbf{17 min} & \textbf{31.7 years} \\
+\textbf{$O(N^3)$} & 1 $\mu$s & 1 ms & 1 s & \textbf{31.7 years} & $3 \times 10^{10}$ years \\
+\textbf{$O(2^N)$} & 1 $\mu$s & $10^{14}$ yrs & $10^{285}$ yrs & --- & --- \\ \bottomrule
+\end{tabular}
+\end{table}
+
+The lesson from Table \ref{tab:1gops} is clear:
+\begin{itemize}
+    \item $O(1)$, $O(\ln N)$, $O(N)$, and $O(N \ln N)$ are all exceptionally fast and scalable. We call these "efficient" algorithms.
+    \item $O(N^2)$ (quadratic) becomes unusable very quickly. An $N$ of one million, which is not large for modern datasets, would take 17 minutes.
+    \item $O(N^3)$ (cubic) and $O(2^N)$ (exponential) are "intractable." They are completely unusable for anything other than trivially small $N$.
+\end{itemize}
+
+\paragraph{But what if we buy a faster computer?}
+Slide 5 shows the same table for a 10 Peta-op/s supercomputer (10,000 times faster).
+\begin{itemize}
+    \item The $O(N^3)$ algorithm for $N=1,000,000$ drops from 31.7 years to 100 seconds. This is a huge improvement!
+    \item \textbf{But this is a trap.} A 10,000x faster computer only lets you solve a problem $\sqrt[3]{10000} \approx 21.5$ times larger in the same amount of time.
+    \item For $N=1,000,000,000$, the $O(N^3)$ algorithm \textit{still} takes 3000 years.
+\end{itemize}
+
+\textbf{The fundamental lesson of complexity is that a good algorithm on a slow computer will always beat a bad algorithm on a fast computer for a large enough $N$.} You cannot fix a bad algorithm with better hardware.
+
+When choosing (Slide 6), you \textit{always} prefer the lower complexity class. $O(1000 \ln N)$ is still $O(\ln N)$, and it will \textit{always} be faster than $O(N)$ once $N$ is large enough.
+
+\subsection{Complexity Examples in C++}
+(Slides 7, 8, 9)
+
+Let's analyze some simple C++ code blocks.
+
+\subsubsection{Example 1: Single Loop (Slide 7)}
+\begin{lstlisting}[caption={A simple linear-time loop.},label=list:ex1]
+int n = 1000;
+for (int i = 0; i < n; ++i) {
+    std::cout << i*i << std::endl;
+}
+\end{lstlisting}
+\begin{itemize}
+    \item The work inside the loop (multiplication, output) is constant time. We call this $O(1)$.
+    \item The loop executes exactly $n$ times.
+    \item Total time = $n \times O(1) = O(n)$.
+    \item Since the best case and worst case are identical (it \textit{always} runs $n$ times), we can say this is $\Theta(n)$.
+\end{itemize}
+
+\subsubsection{Example 2: Nested Loop (Slide 8)}
+\begin{lstlisting}[caption={A nested quadratic-time loop.},label=list:ex2]
+int n = 1000;
+for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < i; ++j) {
+        std::cout << i*j << std::endl;
+    }
+}
+\end{lstlisting}
+\begin{itemize}
+    \item The outer loop runs $n$ times (for $i = 0, 1, ..., n-1$).
+    \item The inner loop runs $i$ times.
+    \item The total number of operations is the sum of $0 + 1 + 2 + 3 + ... + (n-1)$.
+    \item This is a famous arithmetic series, which sums to $\frac{n(n-1)}{2} = \frac{n^2 - n}{2}$.
+    \item Using our notation rules, we drop the constants ($\frac{1}{2}$) and the lower-order term ($-n/2$).
+    \item The complexity is $O(n^2)$.
+    \item Since it always does this, it is $\Theta(n^2)$.
+\end{itemize}
+
+\subsubsection{Example 3: Search with `break` (Slide 9)}
+\begin{lstlisting}[caption={A linear search with different cases.},label=list:ex3]
+// Block 1: Allocation
+int n = 1000;
+double* x = new double[n]; // O(n) operation
+for (int i=0; i < n; ++i)  // O(n) operation
+    x[i] = i;
+
+// Block 2: Search
+int pos = -1;
+for (int i=0; i < n; ++i) {
+    if (x[i] == y) {
+        pos = i;
+        break; // This is the important line!
+    }
+}
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Block 1:} Allocating $n$ elements is $O(n)$. The loop to fill them is $O(n)$. Total time is $O(n) + O(n)$, which is still just $O(n)$.
+    \item \textbf{Block 2:} The `break` statement changes everything.
+        \begin{itemize}
+            \item \textbf{Worst Case:} The value `y` is the last element ($x[n-1]$) or is not in the array at all. The loop runs $n$ times. The complexity is $O(n)$.
+            \item \textbf{Best Case:} The value `y` is the very first element ($x[0]$). The loop runs once, hits the `break`, and exits. The complexity is $O(1)$.
+        \end{itemize}
+    \item \textbf{Conclusion:} Because the best and worst cases are different, we cannot use $\Theta$. We say the algorithm has a worst-case of $O(n)$ and a best-case of $\Omega(1)$.
+\end{itemize}
+
+\subsection{Amortized Analysis: The "Clever Way" to Grow Arrays}
+(Slides 10, 11)
+
+\paragraph{The "Simple Way" (Slide 10)}
+Imagine you have a fixed-size array of $N$ elements, and you want to add one more. You must:
+\begin{enumerate}
+    \item Allocate a \textit{new} array of size $N+1$.
+    \item \textit{Copy} all $N$ elements from the old array to the new one.
+    \item Add the new $(N+1)^{th}$ element.
+\end{enumerate}
+The copy step takes $O(N)$ time. If you do this for \textit{every single element} you add, adding $N$ elements one by one will take $O(1) + O(2) + ... + O(N) = O(N^2)$ time. This is horribly slow.
+
+\paragraph{The "Clever Way" (Amortized $O(1)$) (Slide 11)}
+This is the strategy used by C++'s `std::vector`.
+\begin{enumerate}
+    \item When you ask for an array, it secretly allocates \textit{extra space}. This is its \textbf{capacity}. The number of elements you are using is its \textbf{size}.
+    \item As you add elements, it just increments the `size`. This is a $O(1)$ operation.
+    \item When you try to add an element and `size == capacity`, the vector is full. It now performs an "expensive" operation:
+    \item It allocates a \textit{new}, much larger array, typically \textbf{double the size} ($2N$).
+    \item It copies the $N$ old elements. This one operation is $O(N)$.
+    \item It adds the new element.
+\end{enumerate}
+This single $O(N)$ operation seems bad, but it just bought you $N$ more "cheap" $O(1)$ additions.
+
+\textbf{Amortized Analogy:} You have a 10-person dining table.
+\begin{itemize}
+    \item \textbf{Simple Way ($O(N)$):} When guest \#11 arrives, you move everyone to an 11-person table. When guest \#12 arrives, you move everyone to a 12-person table. This is a nightmare.
+    \item \textbf{Clever Way (Amortized $O(1)$):} When guest \#11 arrives, you move all 10 people to a 20-person table. This one move is expensive ($O(N)$). But now, guests \#12 through \#20 can just sit down instantly ($O(1)$).
+\end{itemize}
+The total cost of $N$ additions is $O(N)$ (for the one expensive copy) plus $N \times O(1)$ (for the cheap additions). The total cost is $O(N)$. The \textit{average} or \textit{amortized} cost per operation is $O(N) / N = \mathbf{O(1)}$.
+
+\section{The C++ Standard Template Library (STL)}
+
+\subsection{What is the STL?}
+(Slides 12, 13)
+
+The \textbf{Standard Template Library (STL)} is a powerful, efficient, and well-tested library of code built into C++. Its key idea is \textbf{generic programming}: writing code that works with any data type.
+
+The STL is built on three core pillars:
+\begin{enumerate}
+    \item \textbf{Containers:} Data structures that store your data.
+    \item \textbf{Algorithms:} Functions that process your data.
+    \item \textbf{Iterators:} The "glue" that connects algorithms to containers.
+\end{enumerate}
+
+\textbf{Analogy:}
+\begin{itemize}
+    \item \textbf{Containers} are your filing cabinets, phone books, and to-do lists.
+    \item \textbf{Algorithms} are the \textit{actions} you take: `sort()` the files, `find()` a phone number, `reverse()` the to-do list.
+    \item \textbf{Iterators} are a "generic hand" that knows how to point to an item and move to the next one, regardless of whether it's in a filing cabinet or a phone book.
+\end{itemize}
+This design is brilliant: the `std::sort` algorithm doesn't know what a `std::vector` is. It only knows how to use iterators. This means `std::sort` was written \textit{once} and works on almost any container.
+
+\subsection{Simple Utilities}
+(Slides 14, 15)
+
+\paragraph{`std::string` (Slide 14)}
+Found in `<string>`, this is the C++ class for handling text. `std::wstring` is for "wide" characters (e.g., for non-English alphabets). It's a container-like class with many useful member functions.
+
+\paragraph{`std::pair` (Slide 15)}
+Found in `<utility>`, `std::pair` is a simple template class that just holds two values, which can be of different types.
+\begin{lstlisting}[caption={Using std::pair}]
+#include <utility>
+#include <string>
+#include <iostream>
+
+int main() {
+    // Create a pair of a string and an integer
+    std::pair<std::string, int> student("Alice", 20);
+
+    // Access the elements using .first and .second
+    std::cout << "Name: " << student.first << std::endl;
+    std::cout << "Age: " << student.second << std::endl;
+
+    // You can also use std::make_pair
+    auto student2 = std::make_pair("Bob", 22);
+}
+\end{lstlisting}
+This is very useful for functions that need to return two values, or as the element type for `std::map`. For more than two items, C++ offers `std::tuple`.
+
+\section{STL Container Deep Dive}
+(Slide 16)
+
+The STL provides many containers, which we can group into categories. We will explore the most important ones.
+
+\subsection{Common Container Operations}
+
+All STL containers share a common interface for basic operations:
+
+\begin{lstlisting}[caption={Universal Container Operations}]
+// Works for vector, list, deque, set, map, etc.
+std::vector<int> container;
+
+// Size and capacity
+size_t sz = container.size();      // Number of elements
+bool empty = container.empty();    // Returns true if size() == 0
+size_t max_sz = container.max_size(); // Maximum possible size
+
+// Iterators (every container provides these!)
+auto it_begin = container.begin();   // Iterator to first element
+auto it_end = container.end();       // Iterator past last element
+auto cit_begin = container.cbegin(); // Const iterator to first
+auto cit_end = container.cend();     // Const iterator past last
+
+// Clear all elements
+container.clear();  // Removes all elements, size() becomes 0
+
+// Swap contents with another container (very fast - just swaps pointers)
+std::vector<int> other;
+container.swap(other);  // Or: std::swap(container, other);
+\end{lstlisting}
+
+\subsection{Sequence Containers}
+These containers store elements in a specific linear order that you define.
+
+\subsubsection{`std::vector` --- The "Smart Array"}
+(Slides 17, 18, 19, 44, 47)
+
+This is the most common and useful container. It is the C++ "smart array" and should be your default choice. Include with `<vector>`.
+
+\begin{itemize}
+    \item \textbf{Internal Structure:} A single, contiguous block of memory (Slide 17).
+    \item \textbf{Pros:}
+        \begin{itemize}
+            \item \textbf{$O(1)$ Random Access:} \texttt{v[i]} is just a pointer calculation.
+            \item \textbf{Excellent Cache Locality:} Because all data is side-by-side, the CPU can pre-load elements into its ultra-fast cache, making loops very fast.
+            \item \textbf{Amortized $O(1)$ push\_back():} Adding to the end is (on average) $O(1)$ (Slide 19).
+        \end{itemize}
+    \item \textbf{Cons:}
+        \begin{itemize}
+            \item \textbf{$O(N)$ Insert/Erase:} Adding or removing an element in the \textit{middle} is very slow (Slide 18). You have to "shift" all elements after that point, which is an $O(N)$ copy operation.
+        \end{itemize}
+\end{itemize}
+
+\paragraph{Key `vector` Functions:}
+
+\begin{lstlisting}[caption={std::vector Construction}]
+#include <vector>
+
+// === Construction ===
+std::vector<int> v1;                    // Empty vector
+std::vector<int> v2(5);                 // 5 elements, default value (0)
+std::vector<int> v3(5, 42);             // 5 elements, all set to 42
+std::vector<int> v4 = {10, 20, 30};     // Initialize with list
+std::vector<int> v5(v4);                // Copy constructor
+std::vector<int> v6(v4.begin(), v4.begin()+2); // From range [10,20]
+\end{lstlisting}
+
+\begin{lstlisting}[caption={std::vector Adding and Removing Elements}]
+std::vector<int> v = {10, 20, 30};
+
+// === Adding Elements ===
+v.push_back(40);        // Add to end: [10,20,30,40] - O(1) amortized
+v.insert(v.begin(), 5); // Insert at beginning: [5,10,20,30,40] - O(N)
+v.insert(v.begin()+2, 15); // Insert at position 2: [5,10,15,20,30,40] - O(N)
+v.emplace_back(50);     // Construct in-place (more efficient) - O(1) amortized
+
+// === Removing Elements ===
+v.pop_back();           // Remove last: [5,10,15,20,30] - O(1)
+v.erase(v.begin());    // Remove first: [10,15,20,30] - O(N)
+v.erase(v.begin()+1);  // Remove at position 1: [10,20,30] - O(N)
+v.erase(v.begin(), v.begin()+2); // Remove range: [30] - O(N)
+v.clear();              // Remove all elements - O(N)
+\end{lstlisting}
+
+\begin{lstlisting}[caption={std::vector Element Access}]
+std::vector<int> v = {10, 20, 30, 40};
+
+int first = v.front();      // 10 - First element
+int last = v.back();        // 40 - Last element
+int val = v[1];             // 20 - FAST but UNSAFE (no bounds check)
+int val_safe = v.at(1);     // 20 - SAFE (throws exception if out of bounds)
+
+// Using iterators
+int first_it = *v.begin();  // 10 - First element via iterator
+int last_it = *(v.end()-1); // 40 - Last element via iterator
+\end{lstlisting}
+
+\begin{lstlisting}[caption={std::vector Size and Capacity Management}]
+std::vector<int> v = {10, 20, 30, 40};
+
+size_t s = v.size();        // 4 - Number of elements currently stored
+size_t c = v.capacity();    // >= 4 - Space allocated (may be larger)
+bool empty = v.empty();     // false - Equivalent to size() == 0
+
+// Pre-allocate space (optimization!)
+v.reserve(100);  // Guarantee capacity >= 100 (no reallocation until then)
+v.shrink_to_fit(); // Request to reduce capacity to fit size
+
+// Change size
+v.resize(6);      // Size becomes 6, new elements are 0: [10,20,30,40,0,0]
+v.resize(3);      // Size becomes 3: [10,20,30] (elements removed)
+v.resize(5, 99);  // Size becomes 5, new elements are 99: [10,20,30,99,99]
+\end{lstlisting}
+
+\begin{lstlisting}[caption={std::vector Iterator Operations}]
+std::vector<int> v = {10, 20, 30, 40, 50};
+
+// Get iterators
+auto it_begin = v.begin();    // Points to first element (10)
+auto it_end = v.end();        // Points PAST last element (invalid to dereference!)
+auto rit_begin = v.rbegin();  // Reverse: points to last (50)
+auto rit_end = v.rend();      // Reverse: points before first
+
+// Iterate and modify
+for (auto it = v.begin(); it != v.end(); ++it) {
+    *it *= 2;  // Double each element
+}
+// v is now [20, 40, 60, 80, 100]
+
+// Const iteration (read-only)
+for (auto cit = v.cbegin(); cit != v.cend(); ++cit) {
+    std::cout << *cit << " ";
+    // *cit = 0;  // ERROR: Cannot modify through const iterator
+}
+
+// Modern range-based for loop (preferred when you don't need iterator itself)
+for (auto& elem : v) {      // Reference to modify
+    elem += 10;
+}
+for (const auto& elem : v) { // Const reference for read-only
+    std::cout << elem << " ";
+}
+\end{lstlisting}
+
+\subsubsection{\texttt{std::deque} --- The "Double-Ended Queue"}
+(Slide 20)
+
+\texttt{deque} (pronounced "deck") is very similar to \texttt{vector} but with one extra power: it supports fast insertion/removal at \textit{both the front and the back}. Include with \texttt{<deque>}.
+
+\begin{itemize}
+    \item \textbf{Key Feature:} $O(1)$ \texttt{push\_front()}, \texttt{pop\_front()}, \texttt{push\_back()}, \texttt{pop\_back()}.
+    \item \textbf{Analogy:} A line of people where you can add/remove from both the front and the back of the line instantly.
+    \item \textbf{Internals:} More complex than \texttt{vector} (often a list of small arrays). It still provides $O(1)$ random access \texttt{d[i]}, but it's slightly slower than \texttt{vector}'s access due to bad cache locality.
+    \item \textbf{Use Case:} Use \texttt{deque} if you \textit{know} you need to add/remove from the front. Otherwise, \texttt{vector} is usually faster.
+\end{itemize}
+
+\subsubsection{\texttt{std::list} --- The "Linked List"}
+(Slides 24, 49)
+
+\texttt{list} is a \textbf{doubly-linked list}. It is fundamentally different from \texttt{vector}. Include with \texttt{<list>}.
+
+\begin{itemize}
+    \item \textbf{Internal Structure:} A chain of "nodes." Each node contains a value and two pointers: one to the `next` node and one to the `previous` node.
+    \item \textbf{Pros:}
+        \begin{itemize}
+            \item \textbf{$O(1)$ Insert/Erase:} If you have an iterator pointing to a location, you can insert or remove an element in $O(1)$ time. You just re-wire the pointers of the neighbors. No element shifting is needed.
+        \end{itemize}
+    \item \textbf{Cons:}
+        \begin{itemize}
+            \item \textbf{$O(N)$ Access:} You \textit{cannot} do \texttt{l[i]}. To get the 100th element, you \textit{must} start at the beginning and follow the \texttt{next} pointer 100 times.
+            \item \textbf{Bad Cache Locality:} The nodes can be scattered all over memory, which is slow for the CPU's cache.
+        \end{itemize}
+\end{itemize}
+\textbf{Analogy:}
+\begin{itemize}
+    \item \texttt{vector}: A row of mailboxes. Fast to jump to mailbox \#100 ($O(1)$), but slow to add a new mailbox in the middle ($O(N)$).
+    \item \texttt{list}: A treasure hunt. Fast to add a new clue in the middle ($O(1)$), but to find clue \#100, you must follow the first 99 clues ($O(N)$).
+\end{itemize}
+
+Because \texttt{list} is so different, it has its own special member functions (Slide 49) that are much faster than the generic algorithms:
+\begin{itemize}
+    \item \texttt{l.sort()}: A special $O(N \ln N)$ sort that just re-wires pointers, never copying values.
+    \item \texttt{l.splice(it, other\_list)}: Moves all nodes from \texttt{other\_list} into \texttt{l} at position \texttt{it}. This is a $O(1)$ operation!
+    \item \texttt{l.remove(value)}: Removes all elements equal to \texttt{value}.
+    \item \texttt{l.remove\_if(predicate)}: Removes all elements for which the predicate function returns \texttt{true}. (This is key for the Penna model!)
+\end{itemize}
+
+\subsection{Container Adapters}
+(Slides 21, 22, 23, 48)
+
+Adapters are not new containers. They are "wrappers" that provide a simpler, more restrictive interface on top of an existing container (usually `std::deque` by default).
+
+\textbf{Analogy:} A Pez dispenser. It's just a wrapper around a stack of candy, but it \textit{restricts} you. You can only `push()` (load) from one end and `pop()` (eat) from the other. This restriction is a \textit{feature}, as it enforces a specific access pattern.
+
+\subsubsection{\texttt{std::stack}}
+(Slide 21)
+Implements a \textbf{LIFO (Last-In, First-Out)} structure. Include with \texttt{<stack>}.
+\begin{itemize}
+    \item \textbf{Analogy:} A stack of plates. You put a plate on top, you take a plate from the top.
+    \item \textbf{Operations ($O(1)$):}
+        \begin{itemize}
+            \item \texttt{s.push(value)}: Add an element to the top.
+            \item \texttt{s.pop()}: Remove the top element.
+            \item \texttt{s.top()}: Get a reference to the top element.
+        \end{itemize}
+\end{itemize}
+
+\subsubsection{\texttt{std::queue}}
+(Slide 22)
+Implements a \textbf{FIFO (First-In, First-Out)} structure. Include with \texttt{<queue>}.
+\begin{itemize}
+    \item \textbf{Analogy:} A checkout line (or "queue") at a store.
+    \item \textbf{Operations ($O(1)$):}
+        \begin{itemize}
+            \item \texttt{q.push(value)}: Add an element to the \textit{back}.
+            \item \texttt{q.pop()}: Remove the element from the \textit{front}.
+            \item \texttt{q.front()}: Get a reference to the front element.
+            \item \texttt{q.back()}: Get a reference to the back element.
+        \end{itemize}
+\end{itemize}
+
+\subsubsection{\texttt{std::priority\_queue}}
+(Slide 23)
+A special queue where elements are removed based on priority, not arrival time. Include with \texttt{<queue>}.
+\begin{itemize}
+    \item \textbf{Analogy:} An Emergency Room waiting line. Patients are seen by severity (priority), not by who arrived first.
+    \item By default, "priority" means "largest value."
+    \item \textbf{Operations:}
+        \begin{itemize}
+            \item \texttt{pq.push(value)}: Adds an element, sorting it into the queue. ($O(\log N)$)
+            \item \texttt{pq.pop()}: Removes the \textit{highest priority} element. ($O(\log N)$)
+            \item \texttt{pq.top()}: Get a reference to the highest priority element. ($O(1)$)
+        \end{itemize}
+\end{itemize}
+
+\subsection{Associative Containers (Trees)}
+(Slides 25, 26, 27, 28, 50)
+
+We have a problem:
+\begin{itemize}
+    \item \texttt{vector}: Fast access ($O(1)$), but slow search ($O(N)$ in an unsorted vector).
+    \item \texttt{list}: Fast insert/erase ($O(1)$), but slow access and search ($O(N)$).
+\end{itemize}
+What if we need \textbf{fast search, fast insert, AND fast erase}?
+
+\textbf{Solution:} A \textbf{Balanced Binary Search Tree (BST)}.
+\begin{itemize}
+    \item \textbf{Structure (Slide 26, 27):} A tree made of nodes. Each node has a value, a pointer to a `left` child (with a smaller value) and a `right` child (with a larger value).
+    \item \textbf{Performance:} The tree is automatically "balanced" to keep it bushy, not stringy. This guarantees that the height of the tree is $\log N$.
+    \item This means \textbf{search, insert, and erase are all $O(\log N)$}.
+    \item $O(\log N)$ (logarithmic) is \textit{extremely} fast (see Table \ref{tab:1gops}).
+\end{itemize}
+\textbf{Analogy:} The game of "20 Questions." You start at the root and ask a "smaller or larger?" question at each node, dividing the remaining search space in half each time.
+
+The STL provides two main tree-based containers:
+
+\subsubsection{\texttt{std::set}}
+Include with \texttt{<set>}.
+\begin{itemize}
+    \item \textbf{What it is:} Stores a collection of \textbf{unique, sorted} keys.
+    \item \textbf{Analogy:} A VIP guest list. It's sorted alphabetically, and you can't be on the list twice.
+    \item \textbf{Use Case:} When you just need to know if an item \textit{exists} in a set, and you need to do it quickly.
+    \item \textbf{Syntax:}
+        \begin{lstlisting}[caption={Using std::set}]
+#include <set>
+std::set<std::string> banned_users;
+banned_users.insert("Alice");
+banned_users.insert("Bob");
+banned_users.insert("Alice"); // This does nothing, "Alice" is already in.
+
+// Fast O(log N) lookup
+if (banned_users.count("Bob") > 0) {
+    // ...
+}
+        \end{lstlisting}
+\end{itemize}
+
+\subsubsection{\texttt{std::map}}
+Include with \texttt{<map>}.
+\begin{itemize}
+    \item \textbf{What it is:} Stores a collection of \textbf{unique, sorted key-value pairs}.
+    \item \textbf{Analogy:} A dictionary or a phone book. The "key" is the word (e.g., "algorithm"), and the "value" is the definition. The keys are sorted.
+    \item \textbf{Use Case:} Associating one piece of data with another.
+    \item \textbf{Syntax:}
+        \begin{lstlisting}[caption={Using std::map}]
+#include <map>
+#include <string>
+
+std::map<std::string, int> student_ages;
+
+// Insert using [] operator (O(log N))
+student_ages["Charlie"] = 21;
+student_ages["David"] = 19;
+
+// Insert using .insert()
+student_ages.insert(std::make_pair("Eve", 23));
+
+// Fast O(log N) lookup
+std::cout << "David's age: " << student_ages["David"] << std::endl;
+        \end{lstlisting}
+\end{itemize}
+\textbf{Note:} \texttt{multiset} and \texttt{multimap} also exist, which allow duplicate keys.
+
+\section{The Magic Glue: Iterators}
+
+\subsection{The $N \times M$ Problem}
+(Slides 30-34)
+
+We have a problem. We have $M$ containers (\texttt{vector}, \texttt{list}, \texttt{deque}...) and $N$ algorithms (\texttt{find}, \texttt{copy}, \texttt{sort}...).
+\begin{itemize}
+    \item To loop through a \texttt{vector}, you use a pointer: \texttt{for (T* p = ...)}
+    \item To loop through a \texttt{list}, you use a node: \texttt{for (node* p = ...)}
+\end{itemize}
+The code is different! (Slide 30). Does this mean we have to write $N \times M$ different functions (e.g., \texttt{find\_in\_vector}, \texttt{find\_in\_list}, \texttt{sort\_vector}, \texttt{sort\_list})? This would be a nightmare (Slides 31-34).
+
+\subsection{The Solution: Generic Traversal}
+(Slides 35, 36)
+
+The answer is \textbf{NO}. The STL solves this with \textbf{Iterators}.
+An iterator is an object that acts like a "generic pointer." It abstracts away the details of the container.
+
+Every container provides two functions:
+\begin{itemize}
+    \item \texttt{container.begin()}: Returns an iterator to the \textit{first} element.
+    \item \texttt{container.end()}: Returns an iterator \textit{past the last} element.
+\end{itemize}
+All iterators, no matter what container they come from, support common operations:
+\begin{itemize}
+    \item \texttt{++it}: Move to the next element.
+    \item \texttt{*it}: Get the value of the element (\texttt{dereference}).
+    \item \texttt{it1 == it2}: Compare two iterators.
+\end{itemize}
+Now, we can write \textbf{one} generic loop that works on \textbf{any} container:
+\begin{lstlisting}[caption={The generic iterator loop (Slide 35)}]
+// This code works if 'c' is a vector, a list, a deque, or a set!
+for (auto it = c.begin(); it != c.end(); ++it) {
+    auto value = *it;
+    // ... do something with value ...
+}
+\end{lstlisting}
+
+This is so common that C++11 introduced a "range-based for loop" that is just syntactic sugar for the code above:
+\begin{lstlisting}[caption={The modern C++11 loop (Slide 36)}]
+// This is the preferred, modern way to loop
+for (auto const& element : c) {
+    // ... do something with element ...
+}
+\end{lstlisting}
+
+\subsection{How Iterators are Implemented}
+(Slides 37, 38)
+
+This "generic pointer" is just an abstraction.
+\begin{itemize}
+    \item \textbf{For \texttt{std::vector} (Slide 37):} An iterator \textit{is} just a raw pointer. \texttt{begin()} returns a \texttt{T*} to the first element. \texttt{++it} is just pointer arithmetic.
+    \item \textbf{For \texttt{std::list} (Slide 38):} An iterator is a small \textit{class} that holds a pointer to a \texttt{node}. This class \textbf{overloads the operators} to \textit{pretend} to be a pointer:
+        \begin{itemize}
+            \item Its \texttt{operator++()} function is defined to mean \texttt{p = p->next}.
+            \item Its \texttt{operator*()} function is defined to mean \texttt{return p->value}.
+        \end{itemize}
+\end{itemize}
+The algorithm doesn't know or care about this difference. It just calls \texttt{++it} and \texttt{*it}, and the magic works.
+
+\subsection{Complete Iterator Operations Reference}
+
+\subsubsection{Essential Iterator Operators}
+
+\begin{lstlisting}[caption={Core Iterator Operations: Obtaining Iterators}]
+std::vector<int> v = {10, 20, 30, 40};
+
+// Get iterator to first element
+auto it = v.begin();
+
+// Get iterator past the last element (DO NOT dereference!)
+auto it_end = v.end();
+
+// Const iterators (read-only)
+auto cit = v.cbegin();  // Points to first element (const)
+auto cit_end = v.cend(); // Points past last element (const)
+
+// Reverse iterators (iterate backwards)
+auto rit = v.rbegin();  // Points to last element
+auto rit_end = v.rend(); // Points before first element
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Dereferencing - Accessing Values}]
+std::vector<int> v = {10, 20, 30};
+auto it = v.begin();
+
+// Dereference to get value
+int value = *it;  // value = 10
+
+// Access member of pointed object (for objects/structs)
+std::vector<std::string> names = {"Alice", "Bob"};
+auto name_it = names.begin();
+int length = name_it->length();  // Calls string::length()
+// Equivalent to: (*name_it).length()
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Incrementing and Decrementing Iterators}]
+std::vector<int> v = {10, 20, 30, 40};
+auto it = v.begin();
+
+// Pre-increment (preferred for iterators)
+++it;  // Now points to 20
+int val1 = *it;  // val1 = 20
+
+// Post-increment (creates a copy, slightly less efficient)
+auto old_it = it++;  // it moves to 30, old_it still at 20
+int val2 = *old_it;  // val2 = 20
+int val3 = *it;      // val3 = 30
+
+// Pre-decrement (for bidirectional iterators)
+--it;  // Back to 20
+
+// Post-decrement
+it--;  // Back to 10
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Comparison Operators - Essential for Loops!}]
+std::vector<int> v = {10, 20, 30};
+auto it1 = v.begin();
+auto it2 = v.begin();
+auto it_end = v.end();
+
+// Equality comparison
+if (it1 == it2) {
+    // True: both point to same position
+}
+
+// Inequality comparison (most common for loops!)
+if (it1 != it_end) {
+    // True: it1 is not past-the-end
+    int value = *it1;  // Safe to dereference
+}
+
+// IMPORTANT: Always check iterator != end() before dereferencing!
+while (it1 != v.end()) {
+    std::cout << *it1 << " ";
+    ++it1;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Random Access Iterator Operations (vector, deque only)}]
+std::vector<int> v = {10, 20, 30, 40, 50};
+auto it = v.begin();
+
+// Addition (jump forward)
+auto it_plus_3 = it + 3;  // Points to 40
+int val = *it_plus_3;     // val = 40
+
+// Subtraction (jump backward)
+auto it_minus_1 = it_plus_3 - 1;  // Points to 30
+
+// Compound assignment
+it += 2;  // Move forward 2 positions (now at 30)
+it -= 1;  // Move backward 1 position (now at 20)
+
+// Array-like indexing
+int value = it[2];  // Access element 2 positions ahead
+                    // Equivalent to *(it + 2)
+
+// Distance between iterators
+auto dist = v.end() - v.begin();  // dist = 5 (size of vector)
+
+// Relational comparisons
+auto it1 = v.begin();
+auto it2 = v.begin() + 2;
+if (it1 < it2) {  // True: it1 comes before it2
+    // ...
+}
+\end{lstlisting}
+
+\subsubsection{Complete Example: Using All Iterator Operations}
+
+\begin{lstlisting}[caption={Comprehensive iterator usage example}]
+#include <vector>
+#include <iostream>
+
+int main() {
+    std::vector<int> numbers = {10, 20, 30, 40, 50};
+    
+    // === Basic Iteration ===
+    std::cout << "Forward iteration:\n";
+    for (auto it = numbers.begin(); it != numbers.end(); ++it) {
+        std::cout << *it << " ";  // Dereference to get value
+    }
+    std::cout << "\n";
+    
+    // === Reverse Iteration ===
+    std::cout << "Reverse iteration:\n";
+    for (auto rit = numbers.rbegin(); rit != numbers.rend(); ++rit) {
+        std::cout << *rit << " ";
+    }
+    std::cout << "\n";
+    
+    // === Random Access ===
+    auto it = numbers.begin();
+    std::cout << "Element at begin: " << *it << "\n";           // 10
+    std::cout << "Element at begin+2: " << *(it + 2) << "\n";   // 30
+    std::cout << "Element using []: " << it[3] << "\n";         // 40
+    
+    // === Modifying Through Iterator ===
+    auto modify_it = numbers.begin();
+    *modify_it = 15;  // Changes first element from 10 to 15
+    
+    // === Iterator Arithmetic ===
+    auto start = numbers.begin();
+    auto end = numbers.end();
+    auto distance = end - start;  // Number of elements: 5
+    
+    auto middle = start + (distance / 2);  // Points to middle element
+    std::cout << "Middle element: " << *middle << "\n";  // 30
+    
+    // === Const Iterators (Read-Only) ===
+    for (auto cit = numbers.cbegin(); cit != numbers.cend(); ++cit) {
+        std::cout << *cit << " ";  // Can read
+        // *cit = 100;  // ERROR: Cannot modify through const iterator
+    }
+    std::cout << "\n";
+    
+    return 0;
+}
+\end{lstlisting}
+
+\subsection{Iterator Categories}
+(Slide 39)
+
+Not all iterators are created equal. They are categorized by their "power."
+
+\subsubsection{Iterator Category Hierarchy}
+
+\begin{enumerate}
+    \item \textbf{Input/Output Iterator:} Weakest. Can only move forward and be read/written once.
+    \begin{itemize}
+        \item \textbf{Supported:} \texttt{++it}, \texttt{it++}, \texttt{*it}, \texttt{==}, \texttt{!=}
+        \item \textbf{Example:} \texttt{std::istream\_iterator}
+    \end{itemize}
+    
+    \item \textbf{Forward Iterator:} Can move forward (\texttt{++}) many times.
+    \begin{itemize}
+        \item \textbf{Supported:} All Input operations, plus multi-pass guarantee
+        \item \textbf{Example:} \texttt{std::forward\_list::iterator}
+        \item \textbf{Use case:} \texttt{std::find()}, \texttt{std::replace()}
+    \end{itemize}
+    
+    \item \textbf{Bidirectional Iterator:} Can move forward (\texttt{++}) and backward (\texttt{--}).
+    \begin{itemize}
+        \item \textbf{Supported:} All Forward operations, plus \texttt{--it}, \texttt{it--}
+        \item \textbf{Examples:} \texttt{std::list::iterator}, \texttt{std::set::iterator}, \texttt{std::map::iterator}
+        \item \textbf{Use case:} \texttt{std::reverse()}, \texttt{std::find\_end()}
+    \end{itemize}
+    
+    \item \textbf{Random Access Iterator:} Most powerful. Can jump to any position in $O(1)$ time.
+    \begin{itemize}
+        \item \textbf{Supported:} All Bidirectional operations, plus:
+        \begin{itemize}
+            \item \texttt{it + n}, \texttt{it - n}, \texttt{it += n}, \texttt{it -= n}
+            \item \texttt{it[n]} (array subscript)
+            \item \texttt{it2 - it1} (distance)
+            \item \texttt{<}, \texttt{>}, \texttt{<=}, \texttt{>=} (comparison)
+        \end{itemize}
+        \item \textbf{Examples:} \texttt{std::vector::iterator}, \texttt{std::deque::iterator}, raw pointers
+        \item \textbf{Use case:} \texttt{std::sort()}, \texttt{std::binary\_search()}
+    \end{itemize}
+\end{enumerate}
+
+\begin{lstlisting}[caption={Iterator Category Example}]
+// Forward Iterator (std::forward_list)
+std::forward_list<int> fl = {1, 2, 3, 4, 5};
+auto flit = fl.begin();
+++flit;         // OK: Can move forward
+// --flit;      // ERROR: Cannot move backward
+// flit + 2;    // ERROR: Cannot jump
+
+// Bidirectional Iterator (std::list)
+std::list<int> lst = {1, 2, 3, 4, 5};
+auto lit = lst.begin();
+++lit;          // OK: Can move forward
+--lit;          // OK: Can move backward
+// lit + 2;     // ERROR: Cannot jump
+
+// Random Access Iterator (std::vector)
+std::vector<int> vec = {1, 2, 3, 4, 5};
+auto vit = vec.begin();
+++vit;          // OK: Can move forward
+--vit;          // OK: Can move backward
+vit = vit + 3;  // OK: Can jump
+int val = vit[1]; // OK: Can use subscript
+\end{lstlisting}
+
+\textbf{Important:} Algorithms specify the \textit{minimum} category they need. \texttt{std::find} only needs a Forward iterator. \texttt{std::sort} \textit{requires} a Random Access iterator (which is why you can't call \texttt{std::sort} on a \texttt{std::list}).
+
+\section{The Generic Algorithms}
+(Slides 53-63)
+
+Now we get the payoff. The \texttt{<algorithm>} header contains dozens of pre-built, highly-optimized functions that operate on iterators. \textbf{You should always prefer these to writing your own loops.}
+
+\subsection{Example: \texttt{std::find}}
+(Slide 54)
+\texttt{std::find} searches a range for a value.
+\begin{lstlisting}[caption={Using std::find}]
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+std::vector<int> v = {10, 20, 30, 40};
+int value_to_find = 30;
+
+// find returns an iterator
+auto it = std::find(v.begin(), v.end(), value_to_find);
+
+// --- CRITICAL CHECK ---
+// If not found, find returns the .end() iterator!
+if (it != v.end()) {
+    std::cout << "Found it! Value is " << *it << std::endl;
+} else {
+    std::cout << "Value not found." << std::endl;
+}
+\end{lstlisting}
+The implementation of `find` is just the simple generic loop from Slide 35.
+
+\subsection{Example: \texttt{std::find\_if}}
+(Slide 55)
+\texttt{find\_if} is more powerful. Instead of a value, it takes a \textbf{predicate}: a function (or function-like object) that returns \texttt{bool}.
+\begin{lstlisting}[caption={Using std::find_if}]
+// A predicate function
+bool isEven(int x) {
+    return x % 2 == 0;
+}
+
+std::vector<int> v = {1, 3, 5, 6, 7, 9};
+
+// Find the first element for which isEven() returns true
+auto it = std::find_if(v.begin(), v.end(), isEven);
+
+if (it != v.end()) {
+    std::cout << "First even number is " << *it << std::endl; // Prints 6
+}
+\end{lstlisting}
+
+\subsection{Tricky Case 1: Member Functions as Predicates}
+(Slide 56)
+
+What if your predicate is a \textit{member function} of a class?
+\begin{lstlisting}
+class Animal {
+public:
+    bool is_pregnant() const;
+    // ...
+};
+
+std::list<Animal> flock;
+// ...
+// This will NOT compile!
+auto it = std::find_if(flock.begin(), flock.end(), &Animal::is_pregnant);
+\end{lstlisting}
+The \texttt{find\_if} algorithm doesn't know how to call a member function. It expects a global function \texttt{bool(Animal)}.
+
+\textbf{Solution:} Use an adapter from \texttt{<functional>} called \texttt{std::mem\_fn}.
+\begin{lstlisting}
+#include <functional> // Need this!
+
+// This works!
+auto it = std::find_if(flock.begin(), flock.end(), 
+                       std::mem_fn(&Animal::is_pregnant));
+\end{lstlisting}
+
+\subsection{Tricky Case 2: Copying into Empty Containers}
+(Slide 57)
+
+\texttt{std::copy} copies elements from one range to a destination iterator.
+\begin{lstlisting}
+std::vector<int> v = {1, 2, 3};
+std::vector<int> w; // w is EMPTY!
+
+// This will CRASH!
+// w.begin() points to nothing, so copy tries to write to
+// invalid memory.
+std::copy(v.begin(), v.end(), w.begin()); 
+\end{lstlisting}
+\textbf{Solution 1 (Clumsy):} \texttt{w.resize(v.size());} first.
+
+\textbf{Solution 2 (Elegant):} Use a \texttt{std::back\_inserter} from \texttt{<iterator>}.
+\begin{lstlisting}
+#include <iterator> // Need this!
+
+// This works!
+// std::back_inserter(w) is an iterator adapter that
+// "pretends" to be a normal iterator, but its "write"
+// operation (operator=) actually calls w.push_back().
+std::copy(v.begin(), v.end(), std::back_inserter(w));
+
+// w is now {1, 2, 3}
+\end{lstlisting}
+
+\subsection{Algorithm Naming Conventions}
+(Slide 62)
+
+The algorithm names are very consistent.
+\begin{itemize}
+    \item Suffix \textbf{\_if}: Takes a predicate instead of a value.
+        \begin{itemize}
+            \item \texttt{find(..., val)}
+            \item \texttt{find\_if(..., pred)}
+        \end{itemize}
+    \item Suffix \textbf{\_copy}: Does not modify the original range. Writes a \textit{copy} of the result to a destination.
+        \begin{itemize}
+            \item \texttt{reverse(beg, end)}: Reverses the range in-place.
+            \item \texttt{reverse\_copy(beg, end, dest)}: Writes a reversed copy to \texttt{dest}, leaving \texttt{[beg, end)} unchanged.
+        \end{itemize}
+    \item Suffix \textbf{\_copy\_if}: Combines both.
+        \begin{itemize}
+            \item \texttt{remove\_copy\_if(beg, end, dest, pred)}: Copies all elements \textit{except} those for which \texttt{pred} is true.
+        \end{itemize}
+\end{itemize}
+For a full list of all algorithms, see a C++ reference like `cppreference.com`.
+
+\section{Application and Summary}
+
+\subsection{Application: The Penna Model}
+(Slides 58, 64)
+
+The exercise for this week is to code the \texttt{Population} class for the Penna model. You can (and should) use the STL to make this trivial.
+\begin{itemize}
+    \item The \texttt{Population} can just be a \texttt{std::list<Animal>}. We use \texttt{list} because we expect to remove many animals from the middle (when they die), and \texttt{list} is $O(1)$ for this.
+    \item To remove all dead animals, you don't need to write your own loop. You can use the \texttt{list}'s special \texttt{remove\_if} function combined with the \texttt{mem\_fn} adapter.
+\end{itemize}
+\begin{lstlisting}
+#include <list>
+#include <functional>
+#include "animal.hpp"
+
+class Population {
+public:
+    void remove_dead() {
+        // This one line replaces an entire, complex,
+        // error-prone for-loop.
+        pop_.remove_if(std::mem_fn(&Animal::is_dead));
+    }
+    // ...
+private:
+    std::list<Animal> pop_;
+};
+\end{lstlisting}
+The challenge is to write the entire \texttt{Population} class \textbf{without any raw loops} (\texttt{for}, \texttt{while}), using only STL algorithms. This greatly increases reliability.
+
+\subsection{Summary}
+(Slide 65)
+\begin{itemize}
+    \item \textbf{Rule 1:} Before you write any code, \textbf{check the C++ standard library}. \texttt{find}, \texttt{sort}, \texttt{vector}, \texttt{map}, etc., are already written, heavily optimized, and bug-free.
+    \item \textbf{Rule 2:} When you design your own classes, try to emulate the STL. Provide \texttt{.begin()} and \texttt{.end()} iterators so your classes can be used with generic algorithms.
+    \item \textbf{Rule 3:} Don't be scared by the long error messages. Template metaprogramming (the \texttt{<...>} syntax) can produce huge, unreadable errors. This is normal. Look at the \textit{first} line of the error; that's usually where the real problem is.
+\end{itemize}
+
+
+\newpage
+\part{Plotting / Scientific Visualization (week07b)}
+
+\section{Plotting Our Data}
+(Slide 2)
+
+Our scientific simulations will produce large amounts of data (e.g., population size over time). A text file full of numbers is useless for understanding; we need to \textit{visualize} it. This section introduces the tools we can use.
+
+\subsection{Gnuplot}
+\begin{itemize}
+    \item \textbf{Website:} \url{http://www.gnuplot.info/}
+    \item \textbf{What it is:} A very old, powerful, and stable command-line plotting program.
+    \item \textbf{Pros:} It's fast, universal (Linux, macOS, Windows), and excellent for generating 2D and 3D plots quickly, often from within a script.
+\end{itemize}
+
+\subsection{Python + Matplotlib}
+\begin{itemize}
+    \item \textbf{Website:} \url{https://www.python.org/} and \url{https://matplotlib.org/}
+    \item \textbf{What it is:} The combination of the Python programming language and its most popular plotting library, Matplotlib.
+    \item \textbf{Pros:} This is the \textit{de facto} standard in many scientific fields. It is extremely flexible, powerful, and can create publication-quality graphs.
+\end{itemize}
+
+\subsection{Best Practice: Python Virtual Environments}
+When using Python, it is highly recommended to use \textbf{virtual environments} (e.g., via Python's built-in `venv` module).
+
+\begin{itemize}
+    \item \textbf{What it is:} A tool that creates an isolated, self-contained "bubble" for each of your projects.
+    \item \textbf{Analogy:} A virtual environment is like a separate, clean workshop for each project. For "Project A," you can install a special "bandsaw" (e.g., `matplotlib version 3.0`). For "Project B," you can install a different "bandsaw" (e.g., `matplotlib version 3.5`). These don't interfere. This prevents a library update for one project from breaking all your other projects.
+    \item \textbf{How to use (basic):}
+        \begin{verbatim}
+# 1. Create a virtual environment named "my-project-env"
+python3 -m venv my-project-env
+
+# 2. Activate it (on Linux/macOS)
+source my-project-env/bin/activate
+
+# 3. Install libraries. They will only be installed inside this "bubble".
+pip install matplotlib
+pip install numpy
+
+# 4. Run your script
+python my_simulation.py
+
+# 5. Deactivate when you are done
+deactivate
+        \end{verbatim}
+\end{itemize}
+The lecture will cover Python in more detail later. For now, demo code can be found in the `week07/plotting` directory. For 3D visualization of complex simulation data, we will later look at powerful tools like \textbf{ParaView} and \textbf{VisIt}.
+
+\end{document}
+% --- DOCUMENT END ---
