@@ -1,0 +1,6264 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- PREAMBLE ---
+% Set up packages for math, code, graphics, and layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{palatino} % Use a more "textbook-like" font
+\usepackage{mathpazo} % Use Palatino-compatible math fonts
+\usepackage{microtype} % Improves text justification and reduces overfull boxes
+
+% Define colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+
+% Configure the 'listings' package for Python
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4,
+    language=Python,
+    morecomment=[l]{\#},
+}
+\lstset{style=mystyle}
+
+% Allow line breaks in inline \texttt{} commands at underscores and other characters
+\usepackage{xspace}
+
+% Improve hyphenation and line breaking - balanced settings
+\tolerance=2000
+\emergencystretch=3em
+\hfuzz=0.5pt
+
+% Setup for the title page
+\title{Programming Techniques for Scientific Simulations I: \\ A Comprehensive Introduction to Python}
+\author{Based on lecture slides}
+\date{\today}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Programming Techniques for Scientific Simulations},
+    pdfpagemode=FullScreen,
+}
+
+% --- DOCUMENT START ---
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction to Python}
+
+Python is a high-level, interpreted programming language that has become one of the most popular choices for scientific computing, data analysis, web development, and general-purpose programming. Created by Guido van Rossum and first released in 1991, Python emphasizes code readability and simplicity, allowing programmers to express concepts in fewer lines of code than would be possible in languages such as C++ or Java.
+
+The language's design philosophy, often summarized in the \textit{Zen of Python} (accessible by typing \texttt{import this} in any Python interpreter), emphasizes principles such as "Beautiful is better than ugly," "Explicit is better than implicit," and "Readability counts." These principles have guided Python's development and contributed to its widespread adoption across diverse domains.
+
+This comprehensive guide introduces Python programming from the ground up, with a particular focus on techniques applicable to scientific simulations and computational research. We will explore Python's fundamental concepts, syntax, data structures, object-oriented programming features, and the ecosystem of scientific computing libraries that make Python an excellent choice for research and simulation work.
+
+\subsection{Why Python for Scientific Computing?}
+
+Python has emerged as a dominant force in scientific computing for several compelling reasons:
+
+\begin{itemize}
+    \item \textbf{Ease of Learning:} Python's clean syntax and readable code make it accessible to researchers and scientists who may not have extensive programming backgrounds.
+    \item \textbf{Rich Ecosystem:} The availability of powerful libraries such as NumPy, SciPy, Matplotlib, and pandas provides ready-made solutions for numerical computing, data visualization, and analysis.
+    \item \textbf{Rapid Prototyping:} Python's interpreted nature allows for quick testing of ideas without lengthy compilation cycles.
+    \item \textbf{Integration Capabilities:} Python can easily interface with code written in other languages (C, C++, Fortran), allowing performance-critical sections to be optimized while maintaining Python's ease of use for the rest of the application.
+    \item \textbf{Community Support:} A large, active community provides extensive documentation, tutorials, and packages for virtually any computational task.
+\end{itemize}
+
+\section{Understanding Execution Models: Interpreted vs. Compiled Languages}
+
+One of the fundamental distinctions in programming languages is how they transform human-readable source code into machine-executable instructions. Understanding this distinction is crucial for comprehending Python's behavior, performance characteristics, and development workflow.
+
+\subsection{Compiled Languages: The C++ Model}
+
+A \textbf{compiled language} like C++ follows a multi-stage process before code execution:
+
+\begin{enumerate}
+    \item \textbf{Preprocessing:} The preprocessor handles directives (lines beginning with \texttt{\#}), such as \texttt{\#include} statements, expanding them and preparing the code for compilation.
+    \item \textbf{Compilation:} The compiler translates the preprocessed source code into assembly language or directly into machine code, creating object files.
+    \item \textbf{Linking:} The linker combines multiple object files and libraries into a single executable binary file.
+    \item \textbf{Execution:} The resulting binary file can be run directly by the operating system, executing machine instructions native to the processor.
+\end{enumerate}
+
+\textbf{Analogy:} Think of compiled languages like translating an entire book from English into Japanese before anyone reads it. Once translated, Japanese readers can read the book directly without needing the English original or a translator present.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{placeholder_compiled_language_workflow.png}
+\caption{The compilation workflow for C++: source code passes through preprocessor, compiler, and linker stages to produce a binary executable that is then run to generate results.}
+\end{figure}
+
+\textbf{Advantages of Compiled Languages:}
+\begin{itemize}
+    \item \textbf{Performance:} Direct machine code execution is typically faster than interpreted execution.
+    \item \textbf{Early Error Detection:} Many errors are caught at compile time, before the program runs.
+    \item \textbf{Optimization:} Compilers can perform sophisticated optimizations during the translation process.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Compilation Time:} Every code change requires recompilation, which can be time-consuming for large projects.
+    \item \textbf{Platform Dependence:} Binaries are typically platform-specific; code must be recompiled for different operating systems or architectures.
+    \item \textbf{Development Cycle:} The edit-compile-run cycle can slow down development and debugging.
+\end{itemize}
+
+\subsection{Interpreted Languages: The Python Model}
+
+An \textbf{interpreted language} like Python follows a different approach:
+
+\begin{enumerate}
+    \item \textbf{Source Code:} The programmer writes Python code in plain text files.
+    \item \textbf{Interpretation:} The Python interpreter reads the source code line by line (or statement by statement), translating it into bytecode and executing it on the fly.
+    \item \textbf{Results:} Output is generated directly during interpretation without creating a separate executable file.
+\end{enumerate}
+
+\textbf{Analogy:} Think of interpreted languages like having a simultaneous translator at a conference. As the English speaker talks, the translator immediately translates each sentence into Japanese. There's no pre-translated document; translation happens in real-time during execution.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{placeholder_interpreted_language_workflow.png}
+\caption{The interpretation workflow for Python: source code is directly processed by the interpreter, which executes it immediately to produce results, without an intermediate binary compilation stage.}
+\end{figure}
+
+\textbf{Advantages of Interpreted Languages:}
+\begin{itemize}
+    \item \textbf{Rapid Development:} No compilation step means immediate testing of code changes.
+    \item \textbf{Portability:} The same source code runs on any platform with a compatible interpreter.
+    \item \textbf{Dynamic Features:} Runtime interpretation enables powerful dynamic features like reflection and dynamic typing.
+    \item \textbf{Interactive Mode:} Interpreters often provide interactive shells (REPLs - Read-Eval-Print Loops) for experimentation.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Performance:} Interpreted code typically runs slower than compiled code due to the overhead of runtime interpretation.
+    \item \textbf{Runtime Errors:} Some errors only appear during execution, which might not happen until specific code paths are triggered.
+    \item \textbf{Interpreter Dependency:} The program requires an interpreter to be installed on any system where it runs.
+\end{itemize}
+
+\textbf{Note:} In practice, the distinction is more nuanced. Python actually compiles source code to bytecode (stored in \texttt{.pyc} files), which is then interpreted by the Python Virtual Machine. This hybrid approach balances some benefits of both models. Additionally, tools like PyPy use Just-In-Time (JIT) compilation to improve performance, while projects like Cython allow compilation of Python-like code to C extensions.
+
+\section{Type Systems: Static vs. Dynamic Typing}
+
+Type systems represent another fundamental difference between programming languages, affecting how variables are declared, used, and checked for correctness.
+
+\subsection{Static Typing: The C++ Approach}
+
+C++ employs \textbf{static typing}, which means:
+
+\begin{enumerate}
+    \item \textbf{Explicit Type Declaration:} Variable types must be declared explicitly when variables are created.
+    \item \textbf{Compile-Time Type Checking:} The compiler verifies that all operations are type-safe before the program runs.
+    \item \textbf{Type Immutability:} Once a variable is declared with a specific type, it cannot change to a different type.
+\end{enumerate}
+
+\textbf{Example in C++:}
+\begin{lstlisting}[language=C++, caption={Static typing in C++: explicit type declarations and compile-time enforcement}]
+int x = 5;        // x is declared as an integer
+x = 10;           // Valid: assigning another integer
+x = "hello";      // COMPILATION ERROR: cannot assign string to int
+double y = 3.14;  // y is declared as a double
+y = 42;           // Valid: 42 is converted to 42.0
+\end{lstlisting}
+
+\textbf{Analogy:} Think of statically typed variables like labeled storage boxes in a warehouse. A box labeled "Integers Only" can only contain integers. If you try to put a string in that box, the warehouse management system (compiler) will reject it before the warehouse even opens for business.
+
+\textbf{Advantages of Static Typing:}
+\begin{itemize}
+    \item \textbf{Early Error Detection:} Type mismatches are caught at compile time, preventing many runtime errors.
+    \item \textbf{Performance:} The compiler can optimize code based on known types, often resulting in faster execution.
+    \item \textbf{Documentation:} Type declarations serve as inline documentation, making code intent clearer.
+    \item \textbf{Tooling Support:} IDEs can provide better autocomplete, refactoring, and error detection based on type information.
+\end{itemize}
+
+\subsection{Dynamic Typing: The Python Approach}
+
+Python uses \textbf{dynamic typing}, characterized by:
+
+\begin{enumerate}
+    \item \textbf{No Explicit Type Declaration:} Variables are created simply by assignment; no type specification is required.
+    \item \textbf{Runtime Type Checking:} Type compatibility is verified during program execution.
+    \item \textbf{Type Flexibility:} Variables can be reassigned to values of completely different types.
+\end{enumerate}
+
+\textbf{Example in Python:}
+\begin{lstlisting}[caption={Dynamic typing in Python: no type declarations and flexible type reassignment}]
+x = 5          # x refers to an integer object
+print(type(x)) # <class 'int'>
+x = "hello"    # Perfectly valid: x now refers to a string object
+print(type(x)) # <class 'str'>
+x = [1, 2, 3]  # Also valid: x now refers to a list object
+print(type(x)) # <class 'list'>
+\end{lstlisting}
+
+\textbf{Analogy:} Think of dynamically typed variables like flexible containers. The container (variable name) doesn't care what's inside it—integers, strings, lists, or any other object. You can empty it and fill it with something completely different at any time.
+
+\textbf{Advantages of Dynamic Typing:}
+\begin{itemize}
+    \item \textbf{Flexibility:} Code can work with different types without modification (duck typing).
+    \item \textbf{Conciseness:} Less boilerplate code; no need for verbose type declarations.
+    \item \textbf{Rapid Prototyping:} Quick experimentation without worrying about type systems.
+    \item \textbf{Generic Programming:} Easier to write code that works with multiple types.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Runtime Errors:} Type errors only appear during execution, potentially in production.
+    \item \textbf{Performance:} Runtime type checking and flexibility can slow execution.
+    \item \textbf{Less IDE Support:} Harder for tools to provide accurate autocomplete without explicit types.
+    \item \textbf{Implicit Documentation:} Type information isn't immediately visible from variable declarations.
+\end{itemize}
+
+\textbf{Modern Python:} Python 3.5+ introduced optional type hints, allowing developers to annotate types without enforcing them at runtime. Tools like \texttt{mypy} can perform static type checking on annotated code, combining benefits of both approaches:
+
+\begin{lstlisting}[caption={Python type hints provide optional static type checking}]
+def add_numbers(a: int, b: int) -> int:
+    """Add two integers and return the result."""
+    return a + b
+
+result: int = add_numbers(5, 10)  # Type hints are optional documentation
+\end{lstlisting}
+
+\section{Python Versions: Python 2 vs. Python 3}
+
+Understanding Python's version history is important for navigating the ecosystem and making informed decisions about which version to use.
+
+\subsection{Python 2.x: The Legacy Version}
+
+\textbf{Python 2.x} was the dominant version from approximately 2000 to 2010, with Python 2.7 being the final release in this series.
+
+\textbf{Key Facts:}
+\begin{itemize}
+    \item \textbf{Timeline:} Released around 2000; Python 2.7 (the last 2.x version) was released in 2010.
+    \item \textbf{Extended Support:} Python 2.7 received extended support until 2020, with the final release (2.7.18) in April 2020.
+    \item \textbf{End of Life:} Official support ended on January 1, 2020 (see \url{https://pythonclock.org/}).
+    \item \textbf{Legacy Codebases:} Many older projects and libraries were written in Python 2.
+    \item \textbf{Current Status:} No longer recommended for new projects; considered obsolete.
+\end{itemize}
+
+\textbf{Why Python 2 Still Matters:}
+While Python 2 is officially deprecated, you may encounter it in:
+\begin{itemize}
+    \item Legacy systems and older scientific code
+    \item Older tutorials and documentation
+    \item Some embedded systems that haven't been updated
+    \item Systems where updating would break critical dependencies
+\end{itemize}
+
+\subsection{Python 3.x: The Modern Standard}
+
+\textbf{Python 3.x} represents the present and future of the language, with the first release in 2008.
+
+\textbf{Key Facts:}
+\begin{itemize}
+    \item \textbf{Timeline:} First released in December 2008 (Python 3.0).
+    \item \textbf{Breaking Changes:} Not backward compatible with Python 2, requiring code migration.
+    \item \textbf{Improvements:} Cleaner design, better Unicode support, improved consistency.
+    \item \textbf{Ecosystem:} Virtually all major libraries now support Python 3.
+    \item \textbf{Current Dominance:} According to the 2025 Stack Overflow Developer Survey, Python 3 is overwhelmingly the standard.
+\end{itemize}
+
+\textbf{Major Differences Between Python 2 and 3:}
+\begin{enumerate}
+    \item \textbf{Print Statement vs. Function:}
+    \begin{lstlisting}[caption={Print differences between Python 2 and 3}]
+# Python 2
+print "Hello, World!"  # Statement
+
+# Python 3
+print("Hello, World!")  # Function
+    \end{lstlisting}
+    
+    \item \textbf{Integer Division:}
+    \begin{lstlisting}[caption={Division behavior differences}]
+# Python 2
+5 / 2   # Result: 2 (integer division)
+
+# Python 3
+5 / 2   # Result: 2.5 (true division)
+5 // 2  # Result: 2 (floor division)
+    \end{lstlisting}
+    
+    \item \textbf{Unicode Strings:}
+    \begin{itemize}
+        \item Python 2: Strings are bytes by default; Unicode requires \texttt{u"string"} prefix.
+        \item Python 3: Strings are Unicode by default; bytes require \texttt{b"string"} prefix.
+    \end{itemize}
+    
+    \item \textbf{Range Function:}
+    \begin{itemize}
+        \item Python 2: \texttt{range()} returns a list; \texttt{xrange()} returns an iterator.
+        \item Python 3: \texttt{range()} returns an iterator; \texttt{xrange()} doesn't exist.
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Recommendation:} Always use Python 3.x for new projects. As of 2025, Python 3.10+ is widely adopted, with Python 3.11 and 3.12 offering significant performance improvements and new features.
+
+\section{Installing and Setting Up Python}
+
+Python's availability across different operating systems makes it accessible to virtually any developer. However, installation methods vary by platform.
+
+\subsection{Installation on Linux}
+
+Most modern Linux distributions come with Python pre-installed, though it may be necessary to install additional packages or ensure Python 3 is the default version.
+
+\textbf{Installation Steps:}
+\begin{enumerate}
+    \item \textbf{Check Existing Installation:}
+    \begin{lstlisting}[language=bash, caption={Checking Python installation on Linux}]
+python3 --version  # Check Python 3 version
+which python3      # Find Python 3 location
+    \end{lstlisting}
+    
+    \item \textbf{Install via Package Manager:}
+    Different distributions use different package managers:
+    \begin{lstlisting}[language=bash, caption={Installing Python on various Linux distributions}]
+# Debian/Ubuntu
+sudo apt update
+sudo apt install python3 python3-pip python3-dev
+
+# Fedora/RHEL/CentOS
+sudo yum install python3 python3-pip
+
+# OpenSUSE
+sudo zypper install python3 python3-pip
+    \end{lstlisting}
+    
+    \item \textbf{Install Additional Packages:}
+    You may need to install additional packages for a "full" Python environment:
+    \begin{lstlisting}[language=bash, caption={Installing additional Python packages}]
+sudo apt install python3-numpy python3-scipy python3-matplotlib
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{Installation on macOS}
+
+macOS typically includes a basic Python installation, but you should verify it's Python 3 and consider using a package manager for better control.
+
+\textbf{Installation Methods:}
+\begin{enumerate}
+    \item \textbf{Built-in Python:}
+    \begin{lstlisting}[language=bash, caption={Checking macOS Python installation}]
+python3 --version  # Verify Python 3 is available
+    \end{lstlisting}
+    
+    \item \textbf{Homebrew (Recommended):}
+    \begin{lstlisting}[language=bash, caption={Installing Python via Homebrew}]
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python 3
+brew install python3
+    \end{lstlisting}
+    
+    \item \textbf{MacPorts:}
+    \begin{lstlisting}[language=bash, caption={Installing Python via MacPorts}]
+sudo port install python310  # Install Python 3.10
+sudo port select --set python python310  # Set as default
+    \end{lstlisting}
+    
+    \item \textbf{Python Distributions:}
+    \begin{itemize}
+        \item \textbf{Anaconda:} (\url{https://www.anaconda.com/download/}) - Comprehensive distribution with scientific packages
+        \item \textbf{Canopy:} (\url{https://assets.enthought.com/downloads/edm/}) - Enthought's scientific distribution
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Installation on Windows}
+
+Windows doesn't include Python by default, so it must be explicitly installed.
+
+\textbf{Installation Methods:}
+\begin{enumerate}
+    \item \textbf{Official Python Installer:}
+    \begin{itemize}
+        \item Download from \url{https://www.python.org}
+        \item Run installer and ensure "Add Python to PATH" is checked
+        \item Verify installation in Command Prompt or PowerShell
+    \end{itemize}
+    
+    \item \textbf{Microsoft Store:}
+    \begin{itemize}
+        \item Search for "Python" in Microsoft Store
+        \item Install directly with automatic PATH configuration
+    \end{itemize}
+    
+    \item \textbf{Windows Subsystem for Linux (WSL):}
+    \begin{lstlisting}[language=bash, caption={Using Python in WSL}]
+# Install WSL2 first, then:
+sudo apt update
+sudo apt install python3 python3-pip
+    \end{lstlisting}
+    
+    For graphical applications, you may need an X11 server:
+    \begin{itemize}
+        \item Windows 11+ with WSL2 includes built-in X11 support
+        \item Older versions can use VcXsrv or similar X servers
+    \end{itemize}
+    
+    \item \textbf{Python Distributions:}
+    Same as macOS: Anaconda or Canopy provide comprehensive scientific computing environments.
+\end{enumerate}
+
+\textbf{Important Note:} Some older operating systems may still have Python 2.x as the default. Always verify you're using Python 3 by running \texttt{python --version} or \texttt{python3 --version}.
+
+\subsection{Python Distribution Recommendations}
+
+For scientific computing, specialized Python distributions offer significant advantages over standard installations:
+
+\textbf{Anaconda/Miniconda:}
+\begin{itemize}
+    \item Includes 250+ pre-installed scientific packages
+    \item Conda package manager simplifies dependency management
+    \item Environment management for project isolation
+    \item Cross-platform consistency
+    \item Free and open source
+\end{itemize}
+
+\textbf{Enthought Canopy:}
+\begin{itemize}
+    \item Curated collection of scientific packages
+    \item Integrated development environment
+    \item Package management tools
+    \item Educational resources and documentation
+\end{itemize}
+
+For most scientific computing purposes, Anaconda is the recommended distribution due to its comprehensive package collection and excellent environment management capabilities.
+
+\section{Python's Library Ecosystem}
+
+One of Python's greatest strengths is its extensive ecosystem of libraries and packages, which extend the language's capabilities far beyond what's built into the core.
+
+\subsection{The Python Standard Library}
+
+The \textbf{Python Standard Library} consists of over 100 modules that ship with Python, providing functionality for common programming tasks without requiring external installation.
+
+\textbf{Categories of Standard Library Modules:}
+\begin{itemize}
+    \item \textbf{Text Processing:} \texttt{string}, \texttt{re} (regular expressions), \texttt{textwrap}
+    \item \textbf{Data Types:} \texttt{collections}, \texttt{array}, \texttt{copy}, \texttt{enum}
+    \item \textbf{Mathematics:} \texttt{math}, \texttt{random}, \texttt{statistics}, \texttt{decimal}
+    \item \textbf{File and Directory Access:} \texttt{os}, \texttt{pathlib}, \texttt{glob}, \texttt{shutil}
+    \item \textbf{Data Persistence:} \texttt{pickle}, \texttt{json}, \texttt{sqlite3}
+    \item \textbf{Networking:} \texttt{socket}, \texttt{http}, \texttt{urllib}, \texttt{ftplib}
+    \item \textbf{Internet Protocols:} \texttt{email}, \texttt{xml}, \texttt{html}
+    \item \textbf{Concurrency:} \texttt{threading}, \texttt{multiprocessing}, \texttt{asyncio}
+    \item \textbf{Debugging and Testing:} \texttt{unittest}, \texttt{pdb}, \texttt{timeit}
+\end{itemize}
+
+\textbf{Documentation:} Complete documentation available at \url{https://docs.python.org/3/library/index.html}
+
+\textbf{Installation Note:} While the standard library comes with Python, some Linux distributions may split it into separate packages. You may need to use your OS package manager to install the complete library.
+
+\textbf{Exploring the Standard Library:}
+The Python Module of the Week (PyMOTW-3) provides excellent tutorials and examples for standard library modules: \url{https://pymotw.com/3/index.html}
+
+\subsection{The Python Package Index (PyPI)}
+
+The \textbf{Python Package Index} (PyPI, pronounced "pie-pee-eye") is a repository of software packages for Python, containing over 500,000 projects as of 2025.
+
+\textbf{Key Facts:}
+\begin{itemize}
+    \item \textbf{URL:} \url{https://pypi.org/}
+    \item \textbf{Scope:} Covers virtually every domain: web development, data science, machine learning, automation, games, and more
+    \item \textbf{Installation Tool:} \texttt{pip} (Python Package Installer)
+    \item \textbf{Open Source:} Most packages are open source and free to use
+\end{itemize}
+
+\textbf{Installing Packages with pip:}
+\begin{lstlisting}[language=bash, caption={Basic pip usage for installing packages}]
+# Install a package
+pip install numpy
+
+# Install a specific version
+pip install numpy==1.24.0
+
+# Upgrade a package
+pip install --upgrade numpy
+
+# Uninstall a package
+pip uninstall numpy
+
+# List installed packages
+pip list
+
+# Show information about a package
+pip show numpy
+\end{lstlisting}
+
+\textbf{Virtual Environments:}
+Best practice involves using virtual environments to isolate project dependencies:
+
+\begin{lstlisting}[language=bash, caption={Creating and using virtual environments}]
+# Create a virtual environment
+python3 -m venv myproject_env
+
+# Activate the environment (Linux/macOS)
+source myproject_env/bin/activate
+
+# Activate the environment (Windows)
+myproject_env\Scripts\activate
+
+# Install packages in the virtual environment
+pip install numpy scipy matplotlib
+
+# Deactivate when done
+deactivate
+\end{lstlisting}
+
+\textbf{Why Use Virtual Environments?}
+\begin{itemize}
+    \item \textbf{Dependency Isolation:} Different projects can use different versions of the same package
+    \item \textbf{Reproducibility:} Easily recreate exact environments using \texttt{requirements.txt}
+    \item \textbf{System Protection:} Avoid conflicts with system Python packages
+    \item \textbf{Clean Testing:} Start with a clean slate for each project
+\end{itemize}
+
+\subsection{Comparing Python and C++ Library Ecosystems}
+
+While Python's package ecosystem is centralized through PyPI, C++ has a more fragmented landscape:
+
+\begin{itemize}
+    \item \textbf{C++ Libraries:} Often distributed through various channels (system package managers, source repositories, dedicated sites)
+    \item \textbf{Reference:} \url{https://en.cppreference.com/w/cpp/links/libs}
+    \item \textbf{Installation:} Typically more complex, often requiring manual compilation
+    \item \textbf{Header-Only Libraries:} Many C++ libraries are header-only, simplifying distribution
+\end{itemize}
+
+Python's centralized package management through PyPI and pip provides a significantly more streamlined experience for installing and managing dependencies compared to C++'s more fragmented ecosystem.
+
+\section{Essential Scientific Computing Packages}
+
+Python's dominance in scientific computing is largely due to a core set of mature, well-designed packages that provide efficient numerical computing capabilities.
+
+\subsection{NumPy: Numerical Python}
+
+\textbf{NumPy} is the foundational package for numerical computing in Python, providing:
+
+\begin{itemize}
+    \item \textbf{Multi-dimensional Arrays:} Efficient storage and manipulation of arrays and matrices
+    \item \textbf{Mathematical Functions:} Comprehensive collection of mathematical operations
+    \item \textbf{Linear Algebra:} Basic linear algebra operations
+    \item \textbf{Random Number Generation:} Statistical distributions and random sampling
+    \item \textbf{Fourier Transforms:} Fast Fourier Transform (FFT) operations
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install numpy
+\end{lstlisting}
+
+\textbf{Basic Example:}
+\begin{lstlisting}[caption={NumPy array operations}]
+import numpy as np
+
+# Create arrays
+a = np.array([1, 2, 3, 4, 5])
+b = np.array([[1, 2, 3], [4, 5, 6]])
+
+# Mathematical operations (vectorized)
+c = a * 2          # Multiply all elements by 2
+d = np.sin(a)      # Apply sine to all elements
+e = a + a          # Element-wise addition
+
+# Statistical operations
+mean = np.mean(a)
+std = np.std(a)
+
+print(f"Array a: {a}")
+print(f"Doubled: {c}")
+print(f"Mean: {mean}, Std: {std}")
+\end{lstlisting}
+
+\textbf{Why NumPy Matters:} NumPy arrays are implemented in C, making operations much faster than pure Python lists. This forms the foundation for virtually all scientific computing in Python.
+
+\subsection{SciPy: Scientific Python}
+
+\textbf{SciPy} builds on NumPy to provide higher-level scientific computing functionality:
+
+\begin{itemize}
+    \item \textbf{Optimization:} Function minimization, curve fitting, root finding
+    \item \textbf{Integration:} Numerical integration and differential equation solvers
+    \item \textbf{Interpolation:} Data interpolation and smoothing
+    \item \textbf{Linear Algebra:} Advanced linear algebra operations beyond NumPy
+    \item \textbf{Statistics:} Statistical distributions, tests, and functions
+    \item \textbf{Signal Processing:} Filtering, convolution, Fourier analysis
+    \item \textbf{Image Processing:} Basic image manipulation and filtering
+    \item \textbf{Sparse Matrices:} Efficient handling of sparse matrix operations
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install scipy
+\end{lstlisting}
+
+\textbf{Example:}
+\begin{lstlisting}[caption={SciPy optimization example}]
+import numpy as np
+from scipy import optimize
+
+# Define a function to minimize
+def f(x):
+    return (x - 3)**2 + 5
+
+# Find the minimum
+result = optimize.minimize(f, x0=0)
+print(f"Minimum at x = {result.x[0]:.4f}")
+print(f"Minimum value = {result.fun:.4f}")
+\end{lstlisting}
+
+\subsection{Matplotlib: Visualization}
+
+\textbf{Matplotlib} is Python's primary plotting library, providing publication-quality figures:
+
+\begin{itemize}
+    \item \textbf{2D Plots:} Line plots, scatter plots, bar charts, histograms
+    \item \textbf{3D Plots:} Surface plots, wireframes, 3D scatter plots
+    \item \textbf{Customization:} Fine control over every element of a figure
+    \item \textbf{Multiple Formats:} Export to PNG, PDF, SVG, and more
+    \item \textbf{Interactive Plotting:} Zooming, panning, and updating plots dynamically
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install matplotlib
+\end{lstlisting}
+
+\textbf{Example:}
+\begin{lstlisting}[caption={Creating plots with Matplotlib}]
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate data
+x = np.linspace(0, 2*np.pi, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+# Create plot
+plt.figure(figsize=(10, 6))
+plt.plot(x, y1, label='sin(x)', linewidth=2)
+plt.plot(x, y2, label='cos(x)', linewidth=2)
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Trigonometric Functions')
+plt.legend()
+plt.grid(True)
+plt.savefig('trig_functions.png', dpi=300)
+plt.show()
+\end{lstlisting}
+
+\subsection{H5py: HDF5 Interface}
+
+\textbf{H5py} provides a Pythonic interface to the HDF5 binary data format:
+
+\begin{itemize}
+    \item \textbf{Hierarchical Data Format:} Organize data in tree-like structures
+    \item \textbf{Large Datasets:} Efficiently store and access datasets larger than RAM
+    \item \textbf{Metadata:} Attach arbitrary metadata to datasets
+    \item \textbf{Compression:} Built-in data compression support
+    \item \textbf{Cross-Platform:} HDF5 files are portable across systems
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install h5py
+\end{lstlisting}
+
+\textbf{Use Cases:}
+\begin{itemize}
+    \item Storing simulation results
+    \item Managing large scientific datasets
+    \item Sharing data between different programming languages
+\end{itemize}
+
+\subsection{mpi4py: Parallel Computing}
+
+\textbf{mpi4py} provides Python bindings for the Message Passing Interface (MPI):
+
+\begin{itemize}
+    \item \textbf{Distributed Computing:} Run Python programs across multiple processors or nodes
+    \item \textbf{High-Performance Computing:} Essential for large-scale scientific simulations
+    \item \textbf{Standard Interface:} Uses the widely-adopted MPI standard
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install mpi4py
+\end{lstlisting}
+
+\textbf{Note:} Requires an MPI implementation (OpenMPI, MPICH, etc.) to be installed on the system. This topic is covered extensively in High-Performance Computing courses.
+
+\subsection{SymPy: Symbolic Mathematics}
+
+\textbf{SymPy} is a computer algebra system written entirely in Python:
+
+\begin{itemize}
+    \item \textbf{Symbolic Computation:} Algebraic manipulation of mathematical expressions
+    \item \textbf{Equation Solving:} Solve equations symbolically
+    \item \textbf{Calculus:} Symbolic differentiation and integration
+    \item \textbf{Linear Algebra:} Matrix operations with symbolic entries
+    \item \textbf{Pretty Printing:} Beautiful mathematical output
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install sympy
+\end{lstlisting}
+
+\textbf{Example:}
+\begin{lstlisting}[caption={Symbolic mathematics with SymPy}]
+from sympy import symbols, diff, integrate, sin, cos, exp
+
+# Define symbolic variables
+x, y = symbols('x y')
+
+# Define an expression
+expr = x**2 + 2*x*y + y**2
+
+# Differentiate
+dx = diff(expr, x)  # Result: 2*x + 2*y
+dy = diff(expr, y)  # Result: 2*x + 2*y
+
+# Integrate
+integral = integrate(sin(x)*exp(x), x)
+
+print(f"Expression: {expr}")
+print(f"d/dx: {dx}")
+print(f"Integral: {integral}")
+\end{lstlisting}
+
+These packages form the core of Python's scientific computing ecosystem. Together, they provide functionality comparable to commercial systems like MATLAB while remaining free and open source.
+
+\section{Python Execution Environments}
+
+Python offers multiple ways to write and execute code, each suited to different workflows and purposes.
+
+\subsection{The Standard Python Interactive Shell}
+
+The basic Python interpreter provides an interactive Read-Eval-Print Loop (REPL):
+
+\textbf{Starting the Shell:}
+\begin{lstlisting}[language=bash, caption={Launching the Python interactive shell}]
+$ python
+Python 3.10.8 (main, Oct 12 2022, 09:46:29) [Clang 14.0.0] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+\end{lstlisting}
+
+\textbf{Features:}
+\begin{itemize}
+    \item \textbf{Interactive Execution:} Enter code line by line and see immediate results
+    \item \textbf{Experimentation:} Quick testing of ideas and syntax
+    \item \textbf{Learning:} Explore language features interactively
+    \item \textbf{Prompt:} The \texttt{>>>} prompt indicates Python is ready for input
+\end{itemize}
+
+\textbf{Example Session:}
+\begin{lstlisting}[caption={Using the Python interactive shell}]
+>>> x = 5
+>>> y = 10
+>>> x + y
+15
+>>> print("Hello, World!")
+Hello, World!
+>>> import math
+>>> math.sqrt(16)
+4.0
+\end{lstlisting}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item No syntax highlighting
+    \item Limited command history
+    \item No tab completion
+    \item Code not easily saved
+\end{itemize}
+
+\subsection{Running Python Scripts}
+
+For programs longer than a few lines, code should be saved in files with the \texttt{.py} extension and executed as scripts:
+
+\textbf{Creating a Script:}
+Create a file named \texttt{script.py}:
+\begin{lstlisting}[caption={A simple Python script (script.py)}]
+#!/usr/bin/env python3
+"""
+A simple demonstration script.
+"""
+
+def greet(name):
+    """Print a greeting message."""
+    return f"Hello, {name}!"
+
+def main():
+    """Main function."""
+    message = greet("World")
+    print(message)
+    
+    # Perform calculations
+    result = sum(range(1, 11))
+    print(f"Sum of 1-10: {result}")
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+\textbf{Running the Script:}
+\begin{lstlisting}[language=bash, caption={Executing a Python script}]
+$ python script.py
+Hello, World!
+Sum of 1-10: 55
+\end{lstlisting}
+
+\textbf{The Shebang Line:} The first line (\texttt{\#!/usr/bin/env python3}) allows the script to be executed directly on Unix-like systems:
+\begin{lstlisting}[language=bash]
+$ chmod +x script.py  # Make executable
+$ ./script.py         # Run directly
+\end{lstlisting}
+
+\subsection{IPython: Enhanced Interactive Shell}
+
+\textbf{IPython} is an enhanced interactive Python shell with powerful features for productive development and exploration:
+
+\textbf{Starting IPython:}
+\begin{lstlisting}[language=bash, caption={Launching IPython}]
+$ ipython
+Python 3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]
+Type 'copyright', 'credits' or 'license' for more information
+IPython 9.8.0 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]:
+\end{lstlisting}
+
+\textbf{Key Features:}
+\begin{itemize}
+    \item \textbf{Syntax Highlighting:} Color-coded code for readability
+    \item \textbf{Tab Completion:} Press Tab to autocomplete variable names, functions, and module members
+    \item \textbf{Magic Commands:} Special commands prefixed with \texttt{\%} or \texttt{\%\%}
+    \item \textbf{History:} Advanced command history with search and replay
+    \item \textbf{Help System:} Type \texttt{?object} for documentation, \texttt{??object} for source code
+    \item \textbf{Shell Commands:} Execute system commands with \texttt{!command}
+    \item \textbf{Numbered Prompts:} Input and output are numbered for easy reference
+\end{itemize}
+
+\textbf{Example IPython Session:}
+\begin{lstlisting}[caption={Using IPython's enhanced features}]
+In [1]: import numpy as np
+
+In [2]: arr = np.array([1, 2, 3, 4, 5])
+
+In [3]: arr.
+arr.T           arr.all         arr.argmin      arr.astype
+arr.any         arr.argmax      arr.argsort     ...
+
+In [4]: %timeit sum(range(1000))
+5.23 µs ± 123 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
+
+In [5]: np.sqrt?
+Signature: np.sqrt(x, /, out=None, *, where=True, casting='same_kind', ...)
+Docstring:
+Return the non-negative square-root of an array, element-wise.
+...
+
+In [6]: %hist
+1: import numpy as np
+2: arr = np.array([1, 2, 3, 4, 5])
+...
+\end{lstlisting}
+
+\textbf{Useful Magic Commands:}
+\begin{itemize}
+    \item \texttt{\%timeit}: Measure execution time of statements
+    \item \texttt{\%run}: Execute a Python script
+    \item \texttt{\%hist}: Display command history
+    \item \texttt{\%pwd}: Print working directory
+    \item \texttt{\%cd}: Change directory
+    \item \texttt{\%load}: Load code from file into cell
+    \item \texttt{\%save}: Save input history to file
+    \item \texttt{\%\%writefile}: Write cell contents to file
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install ipython
+\end{lstlisting}
+
+\subsection{Jupyter Notebooks: Interactive Computing Environment}
+
+\textbf{Jupyter Notebooks} provide a web-based interactive computing environment that combines code execution, rich text, mathematics, plots, and media in a single document.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{placeholder_jupyter_notebook_interface.png}
+\caption{The Jupyter Notebook interface showing code cells, output, and markdown text combined in a single document. The browser-based interface allows for interactive computing with immediate visual feedback.}
+\end{figure}
+
+\textbf{Starting Jupyter:}
+\begin{lstlisting}[language=bash, caption={Launching Jupyter Notebook or JupyterLab}]
+# Classic Notebook interface
+$ jupyter notebook
+
+# JupyterLab (next-generation interface)
+$ jupyter lab
+\end{lstlisting}
+
+Both commands start a local web server and open a browser window with the Jupyter interface.
+
+\textbf{Key Features:}
+\begin{itemize}
+    \item \textbf{Notebook Format:} Documents contain code cells, markdown cells, and output
+    \item \textbf{Interactive Execution:} Run cells individually, in any order
+    \item \textbf{Rich Output:} Plots, images, videos, and formatted text display inline
+    \item \textbf{Markdown Support:} Write formatted text, equations (LaTeX), and documentation
+    \item \textbf{Sharing:} Notebooks are JSON files that can be easily shared and version-controlled
+    \item \textbf{Export:} Convert notebooks to HTML, PDF, slides, or Python scripts
+    \item \textbf{Kernels:} Support for multiple languages beyond Python (R, Julia, etc.)
+\end{itemize}
+
+\textbf{Cell Types:}
+\begin{enumerate}
+    \item \textbf{Code Cells:} Contain executable Python code
+    \item \textbf{Markdown Cells:} Contain formatted text, equations, and documentation
+    \item \textbf{Raw Cells:} Contain unformatted text (rarely used)
+\end{enumerate}
+
+\textbf{Example Notebook Content:}
+\begin{lstlisting}[caption={Example Jupyter Notebook cells}]
+# Markdown Cell
+# Analysis of Sine Function
+This notebook explores properties of the sine function.
+
+# Code Cell 1
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(0, 2*np.pi, 100)
+y = np.sin(x)
+
+# Code Cell 2
+plt.figure(figsize=(10, 6))
+plt.plot(x, y)
+plt.title('Sine Function')
+plt.xlabel('x')
+plt.ylabel('sin(x)')
+plt.grid(True)
+plt.show()
+
+# Markdown Cell
+## Observations
+- The sine function is periodic with period $2\pi$
+- Maximum value is 1, minimum is -1
+\end{lstlisting}
+
+\textbf{Use Cases:}
+\begin{itemize}
+    \item Data exploration and analysis
+    \item Scientific research documentation
+    \item Teaching and tutorials
+    \item Reproducible research
+    \item Presentation of results with code
+\end{itemize}
+
+\textbf{Installation:}
+\begin{lstlisting}[language=bash]
+pip install jupyter notebook jupyterlab
+\end{lstlisting}
+
+\textbf{JupyterLab vs. Notebook:}
+\begin{itemize}
+    \item \textbf{Notebook:} Classic, simpler interface
+    \item \textbf{JupyterLab:} Modern, extensible interface with multiple panes, terminal, text editor, and more
+\end{itemize}
+
+\subsection{Note on Python vs. Python3 Command}
+
+The command used to invoke Python (\texttt{python} vs. \texttt{python3}) varies across systems:
+
+\textbf{System-Dependent Behavior:}
+\begin{itemize}
+    \item \textbf{Modern Systems:} \texttt{python} typically refers to Python 3
+    \item \textbf{Legacy Systems:} \texttt{python} might still refer to Python 2
+    \item \textbf{Safe Approach:} Use \texttt{python3} to explicitly invoke Python 3
+\end{itemize}
+
+\textbf{PEP 394:} Python Enhancement Proposal 394 provides guidelines on this topic: \url{https://peps.python.org/pep-0394/}
+
+\textbf{Checking Your System:}
+\begin{lstlisting}[language=bash]
+python --version   # Check what 'python' refers to
+python3 --version  # Check Python 3 version
+\end{lstlisting}
+
+\section{Getting Help in Python}
+
+Python includes a comprehensive built-in help system, making it easy to learn about functions, classes, and modules without leaving the interpreter.
+
+\subsection{The help() Function}
+
+The \texttt{help()} function provides interactive access to Python's documentation:
+
+\textbf{General Help:}
+\begin{lstlisting}[caption={Starting the interactive help system}]
+>>> help()
+Welcome to Python 3.10's help utility!
+...
+help> quit
+\end{lstlisting}
+
+\textbf{Help on Specific Objects:}
+\begin{lstlisting}[caption={Getting help on specific objects}]
+>>> help(int)
+Help on class int in module builtins:
+
+class int(object)
+ |  int([x]) -> integer
+ |  int(x, base=10) -> integer
+ |  
+ |  Convert a number or string to an integer...
+ ...
+
+>>> help(print)
+Help on built-in function print in module builtins:
+
+print(...)
+    print(value, ..., sep=' ', end='\n', file=sys.stdout, flush=False)
+    
+    Prints the values to a stream, or to sys.stdout by default.
+    ...
+
+>>> import math
+>>> help(math.sqrt)
+Help on built-in function sqrt in module math:
+
+sqrt(x, /)
+    Return the square root of x.
+\end{lstlisting}
+
+\textbf{What help() Shows:}
+\begin{itemize}
+    \item Function signatures (parameters and return types)
+    \item Docstrings (documentation written by developers)
+    \item Available methods and attributes
+    \item Usage examples (if provided)
+\end{itemize}
+
+\subsection{IPython's Enhanced Help}
+
+IPython provides an even more convenient help system:
+
+\textbf{Quick Help:}
+\begin{lstlisting}[caption={IPython's help shortcuts}]
+In [1]: import numpy as np
+
+# Append ? for quick help
+In [2]: np.sqrt?
+Signature: np.sqrt(x, /, out=None, *, where=True, ...)
+Docstring:
+Return the non-negative square-root of an array, element-wise.
+...
+
+# Append ?? for source code
+In [3]: np.sqrt??
+Signature: np.sqrt(x, /, out=None, *, where=True, ...)
+Source:   
+# C function - source not available
+
+# Tab completion for methods
+In [4]: np.arr<Tab>
+np.array        np.array_equal   np.array_repr
+np.array_api    np.array_equiv   np.array_split
+\end{lstlisting}
+
+\subsection{Online Documentation}
+
+While built-in help is convenient, online documentation often provides more comprehensive information:
+
+\begin{itemize}
+    \item \textbf{Official Python Docs:} \url{https://docs.python.org/3/}
+    \item \textbf{Library References:} Each major package has detailed documentation
+    \item \textbf{Stack Overflow:} Community Q\&A for specific problems
+    \item \textbf{Real Python:} Tutorials and guides
+\end{itemize}
+
+\section{Python Syntax Fundamentals}
+
+Now that we understand Python's ecosystem and execution environments, let's dive into the language's syntax and fundamental programming constructs.
+
+\subsection{A First Complete Example}
+
+Let's examine a complete Python program that demonstrates several key syntactic features:
+
+\begin{lstlisting}[caption={A comprehensive Python syntax example}]
+x = 11/3 - 9//2  # this is a comment
+y = "Hola"
+z = 3.14         # another comment
+
+if y == "Hola" or z >= 3:
+    x = x + 2
+    y = y + " mundo!"  # string concatenation
+
+print(y)
+print(f"{x = :5.3f}")  # f-string formatting
+
+year, month, day = 1943, 6, 15
+hour, minute, second = 23, 6, 54
+
+if 1900 < year < 2100 and 1 <= month <= 12 \
+        and 1 <= day <= 31 and 0 <= hour < 24 \
+        and 0 <= minute < 60 and 0 <= second < 60:
+    print("Looks like a valid date!",
+          "Indeed!")
+\end{lstlisting}
+
+\textbf{Syntactic Elements Demonstrated:}
+
+\begin{enumerate}
+    \item \textbf{Comments:} Lines beginning with \texttt{\#} are ignored by Python
+    \item \textbf{Dynamic Typing:} Variables don't require type declarations
+    \item \textbf{Operators:} 
+    \begin{itemize}
+        \item \texttt{/} performs floating-point division (11/3 = 3.666...)
+        \item \texttt{//} performs floor division (9//2 = 4)
+    \end{itemize}
+    \item \textbf{Conditional Statements:} \texttt{if} blocks with Boolean expressions
+    \item \textbf{Logical Operators:} \texttt{or}, \texttt{and}, comparison operators
+    \item \textbf{Indentation:} Code blocks are defined by indentation (4 spaces is standard)
+    \item \textbf{String Operations:} Concatenation with \texttt{+}
+    \item \textbf{Formatted Output:} f-strings for flexible string formatting
+    \item \textbf{Multiple Assignment:} Assign several variables in one statement
+    \item \textbf{Chained Comparisons:} \texttt{1900 < year < 2100} is valid Python
+    \item \textbf{Line Continuation:} Backslash (\texttt{\textbackslash}) continues long lines
+    \item \textbf{Implicit Line Joining:} Lines can continue inside parentheses without backslash
+\end{enumerate}
+
+\textbf{Output:}
+\begin{lstlisting}
+Hola mundo!
+x = 1.667
+Looks like a valid date! Indeed!
+\end{lstlisting}
+
+\subsection{Comments}
+
+Comments are text that Python ignores, used to document code for human readers.
+
+\textbf{Single-Line Comments:}
+\begin{lstlisting}[caption={Single-line comments in Python}]
+# This is a comment
+x = 5  # This is also a comment (following code)
+\end{lstlisting}
+
+\textbf{Multi-Line Comments:}
+Python doesn't have a specific multi-line comment syntax, but multi-line strings can serve this purpose:
+\begin{lstlisting}[caption={Multi-line comments using triple-quoted strings}]
+"""
+This is a multi-line comment.
+It can span multiple lines.
+It's technically a string, but if not assigned,
+it's ignored by Python.
+"""
+
+'''
+Single quotes work too for multi-line strings.
+'''
+\end{lstlisting}
+
+\textbf{Best Practices:}
+\begin{itemize}
+    \item Use comments to explain \textit{why}, not \textit{what}
+    \item Keep comments up-to-date with code changes
+    \item Avoid obvious comments (\texttt{\# increment x} for \texttt{x += 1})
+    \item Use docstrings (covered later) for function/class documentation
+\end{itemize}
+
+\subsection{Line Continuation}
+
+Python statements typically end at the line's end, but long statements can be continued across lines:
+
+\textbf{Explicit Continuation (Backslash):}
+\begin{lstlisting}[caption={Explicit line continuation with backslash}]
+total = 1 + 2 + 3 + \
+        4 + 5 + 6 + \
+        7 + 8 + 9
+
+# Conditional spanning multiple lines
+if condition1 and condition2 \
+        and condition3:
+    print("All conditions met")
+\end{lstlisting}
+
+\textbf{Implicit Continuation (Inside Delimiters):}
+Lines automatically continue inside parentheses, brackets, and braces:
+\begin{lstlisting}[caption={Implicit line continuation inside delimiters}]
+# Inside parentheses (preferred method)
+total = (1 + 2 + 3 +
+         4 + 5 + 6 +
+         7 + 8 + 9)
+
+# Function call with many arguments
+result = some_function(arg1, arg2,
+                       arg3, arg4,
+                       arg5, arg6)
+
+# List spanning multiple lines
+numbers = [1, 2, 3,
+           4, 5, 6,
+           7, 8, 9]
+
+# Print with multiple arguments
+print("This is a long message",
+      "that spans multiple lines",
+      "without needing backslashes")
+\end{lstlisting}
+
+\textbf{Best Practice:} Prefer implicit continuation (using parentheses) over explicit continuation (backslashes), as it's cleaner and less error-prone.
+
+\section{Basic Built-In Data Types}
+
+Python provides several built-in data types that form the foundation of all Python programs.
+
+\subsection{Boolean Type}
+
+Booleans represent truth values:
+
+\begin{lstlisting}[caption={Boolean values in Python}]
+x = True   # Note: Capital T
+y = False  # Note: Capital F
+
+# Boolean operations
+a = True and False  # False
+b = True or False   # True
+c = not True        # False
+
+# Comparison operations return booleans
+d = 5 > 3          # True
+e = 10 == 10       # True
+f = "hello" != "world"  # True
+\end{lstlisting}
+
+\textbf{Key Points:}
+\begin{itemize}
+    \item Must be capitalized: \texttt{True} and \texttt{False}, not \texttt{true} and \texttt{false}
+    \item Different from C++, where \texttt{true} and \texttt{false} are lowercase
+    \item Many values are "truthy" or "falsy" when used in Boolean contexts
+\end{itemize}
+
+\textbf{Truthiness in Python:}
+\begin{lstlisting}[caption={Truthy and falsy values}]
+# Falsy values (evaluate to False in boolean context)
+bool(0)         # False
+bool(0.0)       # False
+bool("")        # False (empty string)
+bool([])        # False (empty list)
+bool({})        # False (empty dictionary)
+bool(None)      # False
+
+# Truthy values (evaluate to True)
+bool(1)         # True
+bool(-1)        # True
+bool("hello")   # True (non-empty string)
+bool([1, 2])    # True (non-empty list)
+\end{lstlisting}
+
+\subsection{Integer Type}
+
+Integers are whole numbers without size limits in Python 3:
+
+\begin{lstlisting}[caption={Integer operations in Python}]
+x = 1
+y = 42
+z = -17
+
+# Python integers have arbitrary precision
+big = 12345678901234567890123456789012345678901234567890
+bigger = big ** 2  # No overflow!
+
+# Common operations
+addition = 5 + 3      # 8
+subtraction = 5 - 3   # 2
+multiplication = 5 * 3  # 15
+division = 5 / 3      # 1.6666... (float result)
+floor_division = 5 // 3  # 1 (integer result, rounded down)
+modulo = 5 % 3        # 2 (remainder)
+power = 2 ** 10       # 1024
+
+# Different number bases
+binary = 0b1010       # 10 in decimal
+octal = 0o12          # 10 in decimal
+hexadecimal = 0xA     # 10 in decimal
+\end{lstlisting}
+
+\textbf{Important Differences from C++:}
+\begin{itemize}
+    \item \textbf{No Size Limits:} Python 3 integers grow as needed (no overflow)
+    \item \textbf{Division Behavior:} \texttt{/} always returns float; use \texttt{//} for integer division
+    \item \textbf{No Type Variants:} No separate \texttt{short}, \texttt{long}, \texttt{long long}, etc.
+\end{itemize}
+
+\subsection{Floating-Point Type}
+
+Floats represent decimal numbers:
+
+\begin{lstlisting}[caption={Floating-point numbers in Python}]
+x = 1.0       # Float with decimal point
+y = 1.        # Also valid
+z = .5        # Also valid (0.5)
+
+# Scientific notation
+a = 1e0       # 1.0
+b = 1.5e3     # 1500.0
+c = 2e-4      # 0.0002
+d = 3.14E2    # 314.0 (capital E also works)
+
+# Float operations
+result = 0.1 + 0.2  # 0.30000000000000004 (floating-point imprecision!)
+
+# Mathematical functions (requires import math)
+import math
+root = math.sqrt(2.0)     # 1.414...
+sine = math.sin(math.pi)  # ~0 (numerical approximation)
+\end{lstlisting}
+
+\textbf{Key Points:}
+\begin{itemize}
+    \item Python floats typically map to C's \texttt{double} (64-bit, double precision)
+    \item Subject to floating-point imprecision (cannot exactly represent all decimals)
+    \item Scientific notation uses \texttt{e} or \texttt{E} for powers of 10
+\end{itemize}
+
+\textbf{Floating-Point Caution:}
+\begin{lstlisting}[caption={Floating-point comparison pitfalls}]
+# Dangerous: direct equality comparison
+if 0.1 + 0.2 == 0.3:  # This may be False!
+    print("Equal")
+
+# Better: compare with tolerance
+tolerance = 1e-9
+if abs((0.1 + 0.2) - 0.3) < tolerance:
+    print("Approximately equal")
+
+# Or use math.isclose() (Python 3.5+)
+import math
+if math.isclose(0.1 + 0.2, 0.3):
+    print("Close enough")
+\end{lstlisting}
+
+\subsection{Complex Numbers}
+
+Python has built-in support for complex numbers:
+
+\begin{lstlisting}[caption={Complex number operations}]
+# Creating complex numbers (j or J for imaginary unit)
+z1 = 1 + 1j
+z2 = 2 + 3J
+z3 = complex(4, 5)  # Alternative: 4 + 5j
+
+# Operations
+sum = z1 + z2       # (3+4j)
+product = z1 * z2   # (-1+5j)
+power = 1j ** 2     # (-1+0j) = -1
+
+# Accessing components
+real_part = z1.real      # 1.0
+imag_part = z1.imag      # 1.0
+conjugate = z1.conjugate()  # (1-1j)
+
+# Magnitude
+import math
+magnitude = abs(z1)  # sqrt(1^2 + 1^2) = sqrt(2)
+\end{lstlisting}
+
+\textbf{Mathematical Notation:} Python uses \texttt{j} (or \texttt{J}) for $\sqrt{-1}$, following electrical engineering convention, rather than the mathematical \texttt{i}.
+
+\subsection{String Type}
+
+Strings represent text and are immutable sequences of characters:
+
+\textbf{Creating Strings:}
+\begin{lstlisting}[caption={Various ways to create strings}]
+# Single quotes
+s1 = 'string'
+
+# Double quotes (equivalent to single quotes)
+s2 = "string"
+
+# Choosing quotes based on content
+s3 = "Hello! I'm a string!"  # Contains single quote
+s4 = 'Hi! I\'m "another" string!'  # Escaping quotes
+
+# Triple quotes for multi-line strings
+s5 = """String spanning
+multiple lines
+with preserved formatting"""
+
+s6 = '''Single quotes
+also work for
+multi-line strings'''
+\end{lstlisting}
+
+\textbf{String Operations:}
+\begin{lstlisting}[caption={Common string operations}]
+# Concatenation
+greeting = "Hello" + " " + "World"  # "Hello World"
+
+# Repetition
+repeated = "Ha" * 3  # "HaHaHa"
+
+# Length
+length = len("hello")  # 5
+
+# Indexing (zero-based)
+first = "Python"[0]    # 'P'
+last = "Python"[-1]    # 'n'
+
+# Slicing
+substring = "Python"[0:4]  # "Pyth"
+
+# Methods
+upper = "hello".upper()         # "HELLO"
+lower = "HELLO".lower()         # "hello"
+stripped = "  text  ".strip()   # "text"
+replaced = "hello".replace("l", "L")  # "heLLo"
+split = "a,b,c".split(",")      # ['a', 'b', 'c']
+\end{lstlisting}
+
+\textbf{Escape Sequences:}
+\begin{lstlisting}[caption={Common escape sequences in strings}]
+newline = "Line 1\nLine 2"      # Newline character
+tab = "Column1\tColumn2"        # Tab character
+backslash = "Path\\to\\file"    # Literal backslash
+quote = "She said \"Hello\""    # Escaped quote
+unicode = "\u03B1"              # Unicode character (α)
+
+# Raw strings (no escape processing)
+path = r"C:\new\folder"  # Backslashes treated literally
+\end{lstlisting}
+
+\textbf{String Immutability:}
+\begin{lstlisting}[caption={Strings cannot be modified in-place}]
+s = "hello"
+s[0] = "H"  # TypeError: 'str' object does not support item assignment
+
+# Instead, create a new string
+s = "H" + s[1:]  # "Hello"
+\end{lstlisting}
+
+\textbf{String Encoding:}
+Python 3 strings are Unicode by default, supporting characters from any language:
+\begin{lstlisting}[caption={Unicode support in Python 3 strings}]
+chinese = "你好"
+arabic = "مرحبا"
+emoji = "😀🎉🐍"
+mixed = "Hello, 世界"  # Mix languages freely
+\end{lstlisting}
+
+\section{Operators and Expressions}
+
+Python provides a rich set of operators for performing calculations and comparisons.
+
+\subsection{Arithmetic Operators}
+
+\begin{lstlisting}[caption={Arithmetic operations in Python}]
+# Basic operations
+addition = 5 + 7          # 12
+subtraction = 5 - 2       # 3
+multiplication = 5 * 7    # 35
+
+# Division always returns float
+true_division = 5 / 2     # 2.5
+
+# Floor division returns integer (rounds down)
+floor_division = 5 // 2   # 2
+negative_floor = -5 // 2  # -3 (rounds toward negative infinity)
+
+# Modulo (remainder)
+modulo = 5 % 2            # 1
+modulo2 = 17 % 5          # 2
+
+# Exponentiation (power)
+power = 3 ** 4            # 81 (3^4)
+square_root = 9 ** 0.5    # 3.0 (sqrt using fractional exponent)
+
+# Complex number operations
+complex_power = (1j) ** 2  # (-1+0j)
+\end{lstlisting}
+
+\textbf{Operator Precedence:} (highest to lowest)
+\begin{enumerate}
+    \item Parentheses: \texttt{()}
+    \item Exponentiation: \texttt{**}
+    \item Unary plus/minus: \texttt{+x}, \texttt{-x}
+    \item Multiplication, division: \texttt{*}, \texttt{/}, \texttt{//}, \texttt{\%}
+    \item Addition, subtraction: \texttt{+}, \texttt{-}
+\end{enumerate}
+
+\begin{lstlisting}[caption={Operator precedence examples}]
+result1 = 2 + 3 * 4      # 14 (not 20)
+result2 = (2 + 3) * 4    # 20
+result3 = 2 ** 3 ** 2    # 512 (2^(3^2), right-associative)
+result4 = (2 ** 3) ** 2  # 64
+\end{lstlisting}
+
+\subsection{Using the Math Module}
+
+For more advanced mathematical operations, import the \texttt{math} module:
+
+\begin{lstlisting}[caption={Mathematical functions from the math module}]
+import math
+
+# Constants
+pi = math.pi      # 3.141592653589793
+e = math.e        # 2.718281828459045
+
+# Roots and powers
+sqrt_2 = math.sqrt(2.0)        # 1.4142135623730951
+cube_root = 8 ** (1/3)         # 2.0 (or math.pow(8, 1/3))
+
+# Trigonometric functions (angles in radians)
+sine = math.sin(math.pi)       # ~0 (numerical approximation)
+cosine = math.cos(0)           # 1.0
+tangent = math.tan(math.pi/4)  # ~1.0
+
+# Logarithms
+natural_log = math.log(math.e)    # 1.0 (ln)
+log_base_10 = math.log10(100)     # 2.0
+log_base_2 = math.log2(8)         # 3.0
+
+# Rounding
+ceiling = math.ceil(4.3)    # 5
+floor = math.floor(4.7)     # 4
+
+# Absolute value and sign
+absolute = math.fabs(-5.5)  # 5.5
+absolute2 = abs(-5)         # 5 (built-in, works with integers too)
+\end{lstlisting}
+
+\subsection{Random Number Generation}
+
+The \texttt{random} module provides functions for generating random numbers:
+
+\begin{lstlisting}[caption={Random number generation}]
+import random
+
+# Random float in [0.0, 1.0)
+r1 = random.random()
+
+# Random integer in range [a, b] (inclusive)
+r2 = random.randint(1, 10)  # Integer from 1 to 10
+
+# Random float in range [a, b)
+r3 = random.uniform(0.0, 10.0)
+
+# Random choice from a sequence
+color = random.choice(['red', 'green', 'blue'])
+
+# Shuffle a list in-place
+deck = list(range(52))
+random.shuffle(deck)
+
+# Random sample without replacement
+sample = random.sample(range(100), 5)  # 5 unique numbers
+
+# Set seed for reproducibility
+random.seed(42)  # Same seed produces same sequence
+\end{lstlisting}
+
+\textbf{Scope and Modules:}
+When importing modules, access their contents using the dot operator:
+\begin{lstlisting}[caption={Module scope and the dot operator}]
+import math
+import random
+
+# Access with module.member syntax
+result1 = math.sqrt(16)      # math is the module, sqrt is the function
+result2 = random.random()    # random is the module, random is the function
+
+# Alternative: import specific items
+from math import sqrt, pi
+result3 = sqrt(16)  # Can use directly without module prefix
+
+# Import with alias
+import numpy as np
+arr = np.array([1, 2, 3])  # np is the alias for numpy
+\end{lstlisting}
+
+\section{Compound Data Types: Lists}
+
+Lists are one of Python's most versatile and commonly used data structures. They are ordered, mutable sequences that can contain elements of any type.
+
+\subsection{Creating and Accessing Lists}
+
+\begin{lstlisting}[caption={Creating and accessing Python lists}]
+# Creating lists with square brackets
+x = [0, 1, 2, 3, 3]
+
+# Zero-based indexing
+first = x[0]    # 0
+second = x[1]   # 1
+third = x[2]    # 2
+
+# Negative indexing (from the end)
+last = x[-1]     # 3 (last element)
+second_last = x[-2]  # 3 (second-to-last)
+
+# Length of list
+size = len(x)    # 5
+
+# Lists can contain mixed types
+mixed = [0, 1, 2, 'three']  # integers and string
+nested = [1, [2, 3], 4]     # list within list
+\end{lstlisting}
+
+\textbf{Why Negative Indexing?}
+Negative indices provide a convenient way to access elements from the end without knowing the list's length:
+\begin{lstlisting}[caption={Comparing positive and negative indexing}]
+numbers = [10, 20, 30, 40, 50]
+
+# Without negative indexing
+last = numbers[len(numbers) - 1]  # 50 (verbose)
+
+# With negative indexing
+last = numbers[-1]  # 50 (concise)
+\end{lstlisting}
+
+\subsection{Modifying Lists}
+
+Lists are mutable, meaning their contents can be changed:
+
+\begin{lstlisting}[caption={Modifying list contents}]
+x = [0, 1, 2, 3, 4]
+
+# Modify element
+x[2] = 99  # x = [0, 1, 99, 3, 4]
+
+# Insert at specific position
+x.insert(0, -1)  # x = [-1, 0, 1, 99, 3, 4]
+
+# Append to end
+x.append(5)  # x = [-1, 0, 1, 99, 3, 4, 5]
+
+# Remove by index (returns removed value)
+removed = x.pop(3)  # removes 99, returns 99
+# x = [-1, 0, 1, 3, 4, 5]
+
+# Remove by value (first occurrence)
+x.remove(3)  # x = [-1, 0, 1, 4, 5]
+
+# Extend list with another list
+x.extend([6, 7])  # x = [-1, 0, 1, 4, 5, 6, 7]
+
+# Clear all elements
+x.clear()  # x = []
+\end{lstlisting}
+
+\subsection{List Concatenation and Repetition}
+
+\begin{lstlisting}[caption={List concatenation and repetition}]
+# Concatenation with +
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+combined = list1 + list2  # [1, 2, 3, 4, 5, 6]
+
+# In-place concatenation with +=
+x = [0, 1, 2, 'three']
+x += [4, 5, 6]  # x = [0, 1, 2, 'three', 4, 5, 6]
+
+# Repetition with *
+repeated = [0] * 5  # [0, 0, 0, 0, 0]
+pattern = [1, 2] * 3  # [1, 2, 1, 2, 1, 2]
+\end{lstlisting}
+
+\subsection{List Slicing}
+
+Slicing extracts portions of a list, creating a new list:
+
+\textbf{Syntax:} \texttt{list[start:stop:step]}
+
+\begin{itemize}
+    \item \texttt{start}: Starting index (inclusive)
+    \item \texttt{stop}: Ending index (exclusive - not included!)
+    \item \texttt{step}: Step size (optional, default 1)
+\end{itemize}
+
+\begin{lstlisting}[caption={List slicing operations}]
+x = [0, 1, 2, 'three', 4, 5, 6]
+
+# Basic slicing [start:stop]
+slice1 = x[1:4]   # [1, 2, 'three'] (indices 1, 2, 3)
+
+# From start to position
+slice2 = x[:3]    # [0, 1, 2] (omit start = begin from 0)
+
+# From position to end
+slice3 = x[1:]    # [1, 2, 'three', 4, 5, 6] (omit stop = until end)
+
+# Slice from end
+slice4 = x[:-1]   # [0, 1, 2, 'three', 4, 5] (all but last)
+slice5 = x[-3:]   # [4, 5, 6] (last three)
+
+# Slicing with step [start:stop:step]
+slice6 = x[::2]   # [0, 2, 4, 6] (every second element)
+slice7 = x[1::2]  # [1, 'three', 5] (every second, starting at 1)
+
+# Negative step (reverse)
+slice8 = x[::-1]  # [6, 5, 4, 'three', 2, 1, 0] (reversed)
+slice9 = x[::-2]  # [6, 4, 2, 0] (reversed, every second)
+
+# Complex slicing
+slice10 = x[1:6:2]  # [1, 'three', 5] (from 1 to 5, step 2)
+\end{lstlisting}
+
+\textbf{Key Insight:} The stop index is always exclusive. Think of slice indices as pointing between elements:
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8\textwidth]{placeholder_list_indexing_diagram.png}
+\caption{Visualization of list indexing: indices point between elements. For a list [0, 1, 2, 3], index positions are at 0, 1, 2, 3, 4, with the slice [1:3] capturing elements between positions 1 and 3 (elements 1 and 2).}
+\end{figure}
+
+\textbf{Guido van Rossum's Explanation:}
+Python's creator explained the rationale for slice semantics on Stack Overflow (\url{https://stackoverflow.com/a/21481885}):
+\begin{itemize}
+    \item Makes \texttt{len(s[a:b]) == b-a} when valid
+    \item Easy to split at position: \texttt{s[:n] + s[n:] == s}
+    \item Makes \texttt{s[:n]} and \texttt{s[n:]} complementary
+\end{itemize}
+
+\subsection{Common List Operations}
+
+\begin{lstlisting}[caption={Additional list operations and methods}]
+numbers = [3, 1, 4, 1, 5, 9, 2, 6]
+
+# Check membership
+contains = 4 in numbers  # True
+not_contains = 7 not in numbers  # True
+
+# Count occurrences
+count = numbers.count(1)  # 2
+
+# Find index of first occurrence
+index = numbers.index(4)  # 2
+
+# Sort list in-place
+numbers.sort()  # numbers = [1, 1, 2, 3, 4, 5, 6, 9]
+
+# Sort in reverse
+numbers.sort(reverse=True)  # [9, 6, 5, 4, 3, 2, 1, 1]
+
+# Return sorted copy (original unchanged)
+original = [3, 1, 4]
+sorted_copy = sorted(original)  # [1, 3, 4]
+# original is still [3, 1, 4]
+
+# Reverse list in-place
+numbers.reverse()  # Reverses order
+
+# Min, max, sum
+minimum = min(numbers)  # Smallest value
+maximum = max(numbers)  # Largest value
+total = sum(numbers)    # Sum of all elements
+
+# Copy a list
+shallow_copy = numbers.copy()  # or numbers[:]
+\end{lstlisting}
+
+\section{Tuples: Immutable Sequences}
+
+Tuples are similar to lists but with one crucial difference: they are immutable.
+
+\subsection{Creating and Using Tuples}
+
+\begin{lstlisting}[caption={Creating and using tuples}]
+# Create tuple with parentheses
+t = (1, 2, 3)
+
+# Access elements (same as lists)
+first = t[0]    # 1
+last = t[-1]    # 3
+
+# Slicing works too
+slice_t = t[1:]  # (2, 3)
+
+# Tuples can contain mixed types
+mixed = (1, "two", 3.0, [4, 5])
+
+# Single element tuple (note the comma!)
+single = (1,)    # Tuple with one element
+not_tuple = (1)  # This is just an integer with parentheses
+
+# Tuple without parentheses (tuple packing)
+coords = 3, 4, 5  # Creates tuple (3, 4, 5)
+
+# Empty tuple
+empty = ()
+empty2 = tuple()
+\end{lstlisting}
+
+\subsection{Tuple Immutability}
+
+The defining characteristic of tuples is that they cannot be modified after creation:
+
+\begin{lstlisting}[caption={Tuples are immutable}]
+t = (1, 2, 3)
+
+# Attempting modification causes error
+t[1] = 99  # TypeError: 'tuple' object does not support item assignment
+
+# Also cannot append, insert, remove, etc.
+t.append(4)  # AttributeError: 'tuple' object has no attribute 'append'
+
+# Can create new tuple by concatenation
+new_t = t + (4, 5)  # (1, 2, 3, 4, 5) (new tuple, original unchanged)
+\end{lstlisting}
+
+\textbf{Important Subtlety:}
+While tuples themselves are immutable, they can contain mutable objects:
+\begin{lstlisting}[caption={Tuples containing mutable objects}]
+t = (1, 2, [3, 4])
+
+# Cannot replace the list
+t[2] = [5, 6]  # TypeError
+
+# But can modify the list in-place
+t[2].append(5)  # Works! t = (1, 2, [3, 4, 5])
+\end{lstlisting}
+
+\subsection{When to Use Tuples vs. Lists}
+
+\textbf{Use Tuples When:}
+\begin{itemize}
+    \item Data shouldn't change (coordinates, RGB colors, database records)
+    \item Need to use as dictionary keys (lists can't be keys)
+    \item Want to convey intent that data is fixed
+    \item Slight performance advantage (tuples are faster)
+    \item Unpacking multiple values from functions
+\end{itemize}
+
+\textbf{Use Lists When:}
+\begin{itemize}
+    \item Data will change over time
+    \item Need to add/remove elements
+    \item Need mutability for algorithms (sorting, filtering)
+\end{itemize}
+
+\subsection{Tuple Packing and Unpacking}
+
+One of tuples' most powerful features is automatic packing and unpacking:
+
+\begin{lstlisting}[caption={Tuple packing and unpacking}]
+# Tuple packing (creating tuple without parentheses)
+coords = 3, 4, 5  # Creates (3, 4, 5)
+
+# Tuple unpacking (multiple assignment)
+x, y, z = coords  # x=3, y=4, z=5
+
+# Swap variables elegantly
+a = 1
+b = 2
+a, b = b, a  # Swaps values (no temp variable needed!)
+
+# Function returning multiple values (actually returns tuple)
+def get_dimensions():
+    return 1920, 1080  # Returns tuple
+
+width, height = get_dimensions()  # Unpack return value
+
+# Unpacking with * (Python 3.0+)
+first, *middle, last = [1, 2, 3, 4, 5]
+# first = 1, middle = [2, 3, 4], last = 5
+\end{lstlisting}
+
+\section{Dictionaries: Key-Value Mappings}
+
+Dictionaries are unordered collections of key-value pairs, similar to hash maps or associative arrays in other languages.
+
+\subsection{Creating Dictionaries}
+
+\begin{lstlisting}[caption={Creating dictionaries}]
+# Method 1: dict() constructor with keyword arguments
+d1 = dict(a=1, b=2, c='three')
+
+# Method 2: Dictionary literal with braces
+d2 = {'a': 1, 'b': 2, 'c': 'three'}
+
+# Method 3: From list of tuples
+d3 = dict([('a', 1), ('b', 2), ('c', 'three')])
+
+# Method 4: Dictionary comprehension (covered later)
+d4 = {x: x**2 for x in range(5)}  # {0:0, 1:1, 2:4, 3:9, 4:16}
+
+# Empty dictionary
+empty = {}
+empty2 = dict()
+
+# Keys can be any hashable type
+mixed_keys = {
+    'string_key': 1,
+    42: 'integer key',
+    (1, 2): 'tuple key',
+    frozenset([1, 2]): 'frozen set key'
+}
+\end{lstlisting}
+
+\subsection{Accessing and Modifying Dictionaries}
+
+\begin{lstlisting}[caption={Dictionary operations}]
+person = {'name': 'Alice', 'age': 30, 'city': 'New York'}
+
+# Access values by key
+name = person['name']  # 'Alice'
+
+# Safe access with get() (returns None if key missing)
+country = person.get('country')  # None (no KeyError)
+country = person.get('country', 'USA')  # 'USA' (default value)
+
+# Check if key exists
+has_name = 'name' in person  # True
+has_country = 'country' in person  # False
+
+# Add new key-value pair
+person['email'] = 'alice@example.com'
+
+# Modify existing value
+person['age'] = 31
+
+# Remove key-value pair
+removed = person.pop('city')  # Returns 'New York', removes from dict
+# Or use del
+del person['email']
+
+# Remove with default if key doesn't exist
+value = person.pop('nonexistent', 'default')  # Returns 'default'
+
+# Get keys, values, items
+keys = person.keys()      # dict_keys(['name', 'age'])
+values = person.values()  # dict_values(['Alice', 31])
+items = person.items()    # dict_items([('name', 'Alice'), ('age', 31)])
+
+# Update dictionary with another dictionary
+person.update({'city': 'Boston', 'country': 'USA'})
+
+# Clear all entries
+person.clear()
+\end{lstlisting}
+
+\subsection{Iterating Over Dictionaries}
+
+\begin{lstlisting}[caption={Iterating over dictionaries}]
+grades = {'Alice': 90, 'Bob': 85, 'Charlie': 92}
+
+# Iterate over keys (default)
+for student in grades:
+    print(student)  # Alice, Bob, Charlie
+
+# Explicitly iterate over keys
+for student in grades.keys():
+    print(student)
+
+# Iterate over values
+for grade in grades.values():
+    print(grade)  # 90, 85, 92
+
+# Iterate over key-value pairs (most common)
+for student, grade in grades.items():
+    print(f"{student}: {grade}")
+    # Alice: 90
+    # Bob: 85
+    # Charlie: 92
+\end{lstlisting}
+
+\subsection{Dictionary Constraints}
+
+\textbf{Key Requirements:}
+\begin{itemize}
+    \item \textbf{Hashable:} Keys must be immutable types (strings, numbers, tuples)
+    \item \textbf{Unique:} Each key can appear only once
+    \item \textbf{No Lists:} Lists cannot be keys (they're mutable)
+\end{itemize}
+
+\begin{lstlisting}[caption={Valid and invalid dictionary keys}]
+# Valid keys
+valid = {
+    'string': 1,
+    42: 2,
+    (1, 2): 3,
+    3.14: 4
+}
+
+# Invalid keys
+invalid = {
+    [1, 2]: 'value'  # TypeError: unhashable type: 'list'
+}
+
+# But lists can be values
+valid_values = {
+    'key1': [1, 2, 3],
+    'key2': {'nested': 'dict'}
+}
+\end{lstlisting}
+
+\subsection{Dictionary Ordering}
+
+\textbf{Historical Note:}
+\begin{itemize}
+    \item \textbf{Python < 3.7:} Dictionaries had no guaranteed order
+    \item \textbf{Python 3.7+:} Dictionaries maintain insertion order as a language feature
+\end{itemize}
+
+\begin{lstlisting}[caption={Dictionary ordering in modern Python}]
+# Python 3.7+: Order is preserved
+d = {}
+d['first'] = 1
+d['second'] = 2
+d['third'] = 3
+
+for key in d:
+    print(key)  # Always prints: first, second, third (in order)
+\end{lstlisting}
+
+\section{Mutability: A Fundamental Concept}
+
+Understanding mutability is crucial for mastering Python's behavior, especially when working with functions and data structures.
+
+\subsection{Defining Mutability}
+
+\textbf{Mutable Objects:}
+Objects whose contents can be changed after creation:
+\begin{itemize}
+    \item Lists: \texttt{[1, 2, 3]}
+    \item Dictionaries: \texttt{\{'a': 1\}}
+    \item Sets: \texttt{\{1, 2, 3\}}
+    \item User-defined classes (usually)
+\end{itemize}
+
+\textbf{Immutable Objects:}
+Objects whose contents cannot be changed after creation:
+\begin{itemize}
+    \item Numbers: \texttt{int}, \texttt{float}, \texttt{complex}
+    \item Strings: \texttt{"hello"}
+    \item Tuples: \texttt{(1, 2, 3)}
+    \item Frozen sets: \texttt{frozenset(\{1, 2\})}
+    \item Booleans: \texttt{True}, \texttt{False}
+    \item \texttt{None}
+\end{itemize}
+
+\subsection{Demonstrating Mutability}
+
+\begin{lstlisting}[caption={Mutable vs immutable behavior}]
+# Mutable: Lists
+lst = [1, 2, 3]
+lst[0] = 99      # Modifies the list in-place
+lst.append(4)    # Adds to existing list
+print(lst)       # [99, 2, 3, 4]
+
+# Immutable: Strings
+s = "hello"
+s[0] = "H"       # TypeError: 'str' object does not support item assignment
+
+# With strings, you must create new objects
+s = "H" + s[1:]  # Creates new string "Hello"
+
+# Immutable: Tuples
+t = (1, 2, 3)
+t[0] = 99        # TypeError: 'tuple' object does not support item assignment
+
+# Immutable: Numbers
+x = 5
+x += 1           # Creates new integer object 6, rebinds x to it
+\end{lstlisting}
+
+\subsection{Why Mutability Matters}
+
+\textbf{Performance:}
+\begin{itemize}
+    \item Mutable objects can be modified efficiently without creating copies
+    \item Immutable objects require creating new objects for any "change"
+\end{itemize}
+
+\textbf{Safety:}
+\begin{itemize}
+    \item Immutable objects are safer in concurrent programs (no race conditions)
+    \item Immutable objects can be dictionary keys and set members
+\end{itemize}
+
+\textbf{Semantics:}
+\begin{itemize}
+    \item Mutability affects how objects behave when passed to functions (covered in detail later)
+    \item Mutability affects aliasing and copying behavior
+\end{itemize}
+
+\subsection{The Identity vs Equality Distinction}
+
+Python distinguishes between object identity and value equality:
+
+\begin{lstlisting}[caption={Identity (is) vs equality (==)}]
+# Equality: same value
+a = [1, 2, 3]
+b = [1, 2, 3]
+print(a == b)    # True (same contents)
+print(a is b)    # False (different objects)
+
+# Identity: same object
+c = a
+print(a == c)    # True (same contents)
+print(a is c)    # True (same object!)
+
+# Modifying c affects a (they're the same object)
+c.append(4)
+print(a)         # [1, 2, 3, 4]
+
+# Immutable objects: Python optimizes by reusing
+x = 100
+y = 100
+print(x is y)    # True (Python reuses small integer objects)
+
+# Strings too
+s1 = "hello"
+s2 = "hello"
+print(s1 is s2)  # Often True (string interning)
+\end{lstlisting}
+
+\textbf{Guidelines:}
+\begin{itemize}
+    \item Use \texttt{==} to compare values
+    \item Use \texttt{is} to check if two names refer to the same object
+    \item Use \texttt{is None} to check for None (by convention)
+\end{itemize}
+
+\section{Control Flow: Conditional Statements}
+
+Control flow structures allow programs to make decisions and execute different code based on conditions.
+
+\subsection{The if Statement}
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={Basic if statement syntax}]
+if condition:
+    # Code executes if condition is True
+    statement1
+    statement2
+\end{lstlisting}
+
+\textbf{Example:}
+\begin{lstlisting}[caption={Simple if statement}]
+temperature = 25
+
+if temperature > 30:
+    print("It's hot today!")
+    print("Drink plenty of water.")
+\end{lstlisting}
+
+\subsection{The if-else Statement}
+
+\begin{lstlisting}[caption={if-else statement}]
+x = -5
+
+if x < 0:
+    print("x is negative")
+else:
+    print("x is non-negative")
+\end{lstlisting}
+
+\subsection{The if-elif-else Statement}
+
+For multiple conditions, use \texttt{elif} (else-if):
+
+\begin{lstlisting}[caption={if-elif-else chain}]
+score = 85
+
+if score >= 90:
+    grade = 'A'
+    print("Excellent!")
+elif score >= 80:
+    grade = 'B'
+    print("Good job!")
+elif score >= 70:
+    grade = 'C'
+    print("Satisfactory")
+elif score >= 60:
+    grade = 'D'
+    print("Need improvement")
+else:
+    grade = 'F'
+    print("Failed")
+
+print(f"Your grade: {grade}")
+\end{lstlisting}
+
+\textbf{Key Points:}
+\begin{itemize}
+    \item Only the first True condition's block executes
+    \item \texttt{elif} and \texttt{else} are optional
+    \item Can have multiple \texttt{elif} blocks
+    \item No limit on number of conditions
+\end{itemize}
+
+\subsection{Comparison Operators}
+
+\begin{lstlisting}[caption={Comparison operators}]
+x = 10
+y = 20
+
+# Equality and inequality
+x == y    # False (equal to)
+x != y    # True (not equal to)
+
+# Ordering
+x < y     # True (less than)
+x > y     # False (greater than)
+x <= y    # True (less than or equal to)
+x >= y    # False (greater than or equal to)
+
+# Identity
+x is y    # False (same object)
+x is not y  # True (different objects)
+
+# Membership (for sequences)
+'a' in 'abc'       # True
+'x' not in 'abc'   # True
+2 in [1, 2, 3]     # True
+\end{lstlisting}
+
+\subsection{Logical Operators}
+
+Combine multiple conditions:
+
+\begin{lstlisting}[caption={Logical operators: and, or, not}]
+age = 25
+has_license = True
+
+# and: Both must be True
+if age >= 18 and has_license:
+    print("Can drive")
+
+# or: At least one must be True
+is_weekend = True
+is_holiday = False
+
+if is_weekend or is_holiday:
+    print("No work today!")
+
+# not: Negates boolean
+is_raining = False
+
+if not is_raining:
+    print("Can go outside")
+
+# Complex conditions
+temperature = 28
+humidity = 70
+
+if (temperature > 25 and humidity > 60) or temperature > 35:
+    print("Uncomfortable weather")
+\end{lstlisting}
+
+\subsection{Chained Comparisons}
+
+Python allows elegant chained comparisons:
+
+\begin{lstlisting}[caption={Chained comparison operators}]
+x = 15
+
+# Instead of:
+if x > 10 and x < 20:
+    print("x is between 10 and 20")
+
+# Python allows:
+if 10 < x < 20:
+    print("x is between 10 and 20")
+
+# Multiple chains
+year = 2024
+month = 3
+day = 15
+
+if 1900 < year < 2100 and 1 <= month <= 12 and 1 <= day <= 31:
+    print("Valid date range")
+
+# Even works with different operators
+a = 1
+b = 2
+c = 3
+
+if a < b < c:    # True
+    print("Ascending order")
+
+if a < b == b < c:  # Can mix operators
+    print("Complex chain")
+\end{lstlisting}
+
+\subsection{Indentation: Python's Block Structure}
+
+\textbf{Critical Rule:} Python uses indentation to define code blocks, not braces.
+
+\begin{lstlisting}[caption={Indentation defines code structure}]
+if condition:
+    # This is inside the if block (indented)
+    statement1
+    statement2
+# This is outside the if block (not indented)
+statement3
+\end{lstlisting}
+
+\textbf{Standard Convention:}
+\begin{itemize}
+    \item Use 4 spaces per indentation level
+    \item Never mix tabs and spaces
+    \item Configure your editor to insert spaces when Tab is pressed
+\end{itemize}
+
+\textbf{Nested Blocks:}
+\begin{lstlisting}[caption={Nested indentation}]
+x = 15
+y = 20
+
+if x > 10:
+    print("x is greater than 10")
+    if y > 15:
+        print("y is also greater than 15")
+        if x < y:
+            print("x is less than y")
+    print("Still in outer if block")
+print("Outside all if blocks")
+\end{lstlisting}
+
+\textbf{Why Indentation?}
+\begin{itemize}
+    \item \textbf{Enforces Readability:} Code is naturally formatted correctly
+    \item \textbf{Reduces Clutter:} No need for braces
+    \item \textbf{Prevents Errors:} Indentation errors are caught immediately
+    \item \textbf{Consistency:} All Python code looks similar
+\end{itemize}
+
+\section{Control Flow: Loops}
+
+Loops allow code to be executed repeatedly, either a specific number of times or while a condition remains true.
+
+\subsection{The while Loop}
+
+The \texttt{while} loop repeats as long as its condition is True:
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={while loop syntax}]
+while condition:
+    # Code block executes while condition is True
+    statements
+\end{lstlisting}
+
+\textbf{Example:}
+\begin{lstlisting}[caption={Basic while loop}]
+x = 0
+while x < 5:
+    print(f"x = {x}")
+    x += 1
+
+print("Loop finished")
+# Output:
+# x = 0
+# x = 1
+# x = 2
+# x = 3
+# x = 4
+# Loop finished
+\end{lstlisting}
+
+\subsection{Loop Control: break and continue}
+
+\textbf{break:} Immediately exits the loop
+\textbf{continue:} Skips the rest of the current iteration and continues with the next
+
+\begin{lstlisting}[caption={break and continue in loops}]
+x = 0
+while x < 10:
+    if x == 2:
+        x += 1
+        continue  # Skip when x is 2
+    
+    if x == 7:
+        break  # Exit loop when x is 7
+    
+    print(f"x = {x}")
+    x += 1
+
+# Output:
+# x = 0
+# x = 1
+# (skips 2)
+# x = 3
+# x = 4
+# x = 5
+# x = 6
+# (breaks at 7)
+\end{lstlisting}
+
+\textbf{Common Use Cases:}
+\begin{lstlisting}[caption={Practical while loop examples}]
+# User input validation
+while True:
+    password = input("Enter password: ")
+    if len(password) >= 8:
+        break
+    print("Password too short. Try again.")
+
+# Process until sentinel value
+while True:
+    value = input("Enter number (or 'quit'): ")
+    if value == 'quit':
+        break
+    process(value)
+
+# Countdown
+count = 10
+while count > 0:
+    print(count)
+    count -= 1
+print("Liftoff!")
+\end{lstlisting}
+
+\subsection{The for Loop: Iteration Over Sequences}
+
+Python's \texttt{for} loop is fundamentally different from C++'s. It's always a "for-each" or "range-based" loop that iterates over elements of a sequence.
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={for loop syntax}]
+for item in sequence:
+    # Code executes once for each item in sequence
+    statements
+\end{lstlisting}
+
+\textbf{Iterating Over Lists:}
+\begin{lstlisting}[caption={Iterating over list elements}]
+fruits = ['apple', 'banana', 'cherry']
+
+for fruit in fruits:
+    print(f"I like {fruit}")
+
+# Output:
+# I like apple
+# I like banana
+# I like cherry
+\end{lstlisting}
+
+\textbf{Iterating Over Strings:}
+\begin{lstlisting}[caption={Iterating over string characters}]
+for letter in "Python":
+    print(letter)
+
+# Output:
+# P
+# y
+# t
+# h
+# o
+# n
+\end{lstlisting}
+
+\textbf{Iterating Over Mixed-Type Lists:}
+\begin{lstlisting}[caption={Iterating over mixed-type sequences}]
+mixed = [0, "a", 7, 1j]
+
+for item in mixed:
+    print(f"Item: {item}, Type: {type(item).__name__}")
+
+# Output:
+# Item: 0, Type: int
+# Item: a, Type: str
+# Item: 7, Type: int
+# Item: 1j, Type: complex
+\end{lstlisting}
+
+\subsection{The range() Function}
+
+For iterating over numbers, Python provides the \texttt{range()} function:
+
+\textbf{Syntax:}
+\begin{itemize}
+    \item \texttt{range(stop)}: Numbers from 0 to stop-1
+    \item \texttt{range(start, stop)}: Numbers from start to stop-1
+    \item \texttt{range(start, stop, step)}: Numbers from start to stop-1, incrementing by step
+\end{itemize}
+
+\begin{lstlisting}[caption={Using range() for numeric iteration}]
+# range(stop)
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+
+# range(start, stop)
+for i in range(2, 6):
+    print(i)  # 2, 3, 4, 5
+
+# range(start, stop, step)
+for i in range(0, 10, 2):
+    print(i)  # 0, 2, 4, 6, 8
+
+# Negative step (counting down)
+for i in range(10, 0, -1):
+    print(i)  # 10, 9, 8, ..., 1
+
+# range() is memory efficient (doesn't create list)
+big_range = range(1000000)  # Uses constant memory
+\end{lstlisting}
+
+\subsection{Iterating with Indices}
+
+When you need both the index and the element:
+
+\textbf{Method 1: Using range() and len():}
+\begin{lstlisting}[caption={Iterating with indices using range()}]
+fruits = ['apple', 'banana', 'cherry']
+
+for i in range(len(fruits)):
+    print(f"Index {i}: {fruits[i]}")
+
+# Output:
+# Index 0: apple
+# Index 1: banana
+# Index 2: cherry
+\end{lstlisting}
+
+\textbf{Method 2: Using enumerate() (Preferred):}
+\begin{lstlisting}[caption={Iterating with enumerate() - Pythonic approach}]
+fruits = ['apple', 'banana', 'cherry']
+
+for i, fruit in enumerate(fruits):
+    print(f"Index {i}: {fruit}")
+
+# Start enumeration at different number
+for i, fruit in enumerate(fruits, start=1):
+    print(f"Item {i}: {fruit}")
+
+# Output:
+# Item 1: apple
+# Item 2: banana
+# Item 3: cherry
+\end{lstlisting}
+
+\textbf{Why enumerate() is Better:}
+\begin{itemize}
+    \item More Pythonic and readable
+    \item Slightly more efficient
+    \item Works with any iterable, not just sequences with \texttt{len()}
+    \item Can specify starting index
+\end{itemize}
+
+\subsection{Nested Loops}
+
+Loops can be nested to iterate over multi-dimensional data:
+
+\begin{lstlisting}[caption={Nested loop example}]
+# Multiplication table
+for i in range(1, 6):
+    for j in range(1, 6):
+        product = i * j
+        print(f"{i} × {j} = {product:2d}", end="  ")
+    print()  # New line after each row
+
+# Nested iteration over 2D list
+matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+
+for row in matrix:
+    for element in row:
+        print(element, end=" ")
+    print()
+\end{lstlisting}
+
+\subsection{Loop else Clause}
+
+Python loops can have an \texttt{else} clause that executes if the loop completes normally (not via \texttt{break}):
+
+\begin{lstlisting}[caption={Loop else clause}]
+# Search for element
+numbers = [1, 3, 5, 7, 9]
+target = 6
+
+for num in numbers:
+    if num == target:
+        print(f"Found {target}!")
+        break
+else:
+    # Executes only if loop didn't break
+    print(f"{target} not found in list")
+
+# Practical example: checking primality
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False  # Found divisor
+    else:
+        return True  # No divisor found
+\end{lstlisting}
+
+\section{List and Dictionary Comprehensions}
+
+Comprehensions provide a concise way to create lists and dictionaries from existing iterables.
+
+\subsection{List Comprehensions}
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={List comprehension syntax}]
+[expression for variable in iterable if condition]
+\end{lstlisting}
+
+\textbf{Basic Examples:}
+\begin{lstlisting}[caption={Basic list comprehensions}]
+# Square numbers
+numbers = [1, 2, 3, 4, 5]
+squares = [x**2 for x in numbers]
+# [1, 4, 9, 16, 25]
+
+# Add 1 to each element
+incremented = [x + 1 for x in numbers]
+# [2, 3, 4, 5, 6]
+
+# Convert to strings
+str_numbers = [str(x) for x in numbers]
+# ['1', '2', '3', '4', '5']
+\end{lstlisting}
+
+\textbf{With Conditions:}
+\begin{lstlisting}[caption={List comprehensions with filtering}]
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Only even numbers
+evens = [x for x in numbers if x % 2 == 0]
+# [2, 4, 6, 8, 10]
+
+# Squares of odd numbers
+odd_squares = [x**2 for x in numbers if x % 2 != 0]
+# [1, 9, 25, 49, 81]
+
+# Skip specific value
+x = [1, 2, 3]
+result = [val + 1 for val in x if val != 2]
+# [2, 4]
+\end{lstlisting}
+
+\textbf{Comparison with Traditional Approach:}
+\begin{lstlisting}[caption={Comprehension vs traditional loop}]
+# Traditional approach
+result = []
+for x in numbers:
+    if x % 2 == 0:
+        result.append(x**2)
+
+# List comprehension (equivalent, more concise)
+result = [x**2 for x in numbers if x % 2 == 0]
+\end{lstlisting}
+
+\textbf{Complex Comprehensions:}
+\begin{lstlisting}[caption={Advanced list comprehensions}]
+# Nested loops
+matrix = [[i*j for j in range(1, 4)] for i in range(1, 4)]
+# [[1, 2, 3], [2, 4, 6], [3, 6, 9]]
+
+# Flattening nested lists
+nested = [[1, 2], [3, 4], [5, 6]]
+flat = [item for sublist in nested for item in sublist]
+# [1, 2, 3, 4, 5, 6]
+
+# With function calls
+words = ['hello', 'world', 'python']
+uppercase = [word.upper() for word in words]
+# ['HELLO', 'WORLD', 'PYTHON']
+
+# Conditional expression (ternary operator)
+numbers = [1, 2, 3, 4, 5]
+labels = ['even' if x % 2 == 0 else 'odd' for x in numbers]
+# ['odd', 'even', 'odd', 'even', 'odd']
+\end{lstlisting}
+
+\subsection{Dictionary Comprehensions}
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={Dictionary comprehension syntax}]
+{key_expression: value_expression for variable in iterable if condition}
+\end{lstlisting}
+
+\textbf{Examples:}
+\begin{lstlisting}[caption={Dictionary comprehensions}]
+# Square mapping
+squares_dict = {x: x**2 for x in range(1, 6)}
+# {1: 1, 2: 4, 3: 9, 4: 16, 5: 25}
+
+# From existing dictionary
+prices = {'apple': 0.50, 'banana': 0.30, 'cherry': 0.75}
+
+# Double all prices
+doubled = {fruit: price * 2 for fruit, price in prices.items()}
+# {'apple': 1.0, 'banana': 0.6, 'cherry': 1.5}
+
+# Filter dictionary
+expensive = {fruit: price for fruit, price in prices.items() if price > 0.40}
+# {'apple': 0.5, 'cherry': 0.75}
+
+# Transform keys and values
+y = dict(x=1, y=2, z=3)
+transformed = {key + '_a': val + 1 for key, val in y.items() if val != 3}
+# {'x_a': 2, 'y_a': 3}
+
+# Swap keys and values
+inverted = {value: key for key, value in prices.items()}
+# {0.5: 'apple', 0.3: 'banana', 0.75: 'cherry'}
+\end{lstlisting}
+
+\subsection{Set Comprehensions}
+
+Similar syntax for creating sets:
+
+\begin{lstlisting}[caption={Set comprehensions}]
+# Set of squares (duplicates automatically removed)
+numbers = [1, 2, 2, 3, 3, 3, 4, 5]
+unique_squares = {x**2 for x in numbers}
+# {1, 4, 9, 16, 25}
+
+# Characters in string (no duplicates)
+letters = {char for char in "hello"}
+# {'h', 'e', 'l', 'o'}
+\end{lstlisting}
+
+\subsection{Generator Expressions}
+
+Use parentheses instead of brackets for memory-efficient iteration:
+
+\begin{lstlisting}[caption={Generator expressions}]
+# List comprehension (creates entire list in memory)
+squares_list = [x**2 for x in range(1000000)]  # Uses lots of memory
+
+# Generator expression (computes on-the-fly)
+squares_gen = (x**2 for x in range(1000000))   # Uses constant memory
+
+# Use in iteration
+for square in squares_gen:
+    if square > 100:
+        break
+
+# Use with functions that accept iterables
+total = sum(x**2 for x in range(100))  # No brackets needed
+\end{lstlisting}
+
+\subsection{When to Use Comprehensions}
+
+\textbf{Use Comprehensions When:}
+\begin{itemize}
+    \item Creating a new list/dict from an existing iterable
+    \item Logic is simple and fits on one line
+    \item Filtering and transforming data
+    \item Makes code more readable
+\end{itemize}
+
+\textbf{Use Traditional Loops When:}
+\begin{itemize}
+    \item Logic is complex or multi-step
+    \item Need to handle exceptions
+    \item Performing actions (not creating new collections)
+    \item Comprehension would be too long or nested
+\end{itemize}
+
+\section{Functions}
+
+Functions are reusable blocks of code that perform specific tasks. They are fundamental to organizing code and avoiding repetition.
+
+\subsection{Defining Functions}
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={Function definition syntax}]
+def function_name(parameters):
+    """Docstring describing the function."""
+    # Function body
+    statements
+    return value
+\end{lstlisting}
+
+\textbf{Components:}
+\begin{enumerate}
+    \item \textbf{def keyword:} Begins function definition
+    \item \textbf{function\_name:} Identifier following Python naming conventions
+    \item \textbf{parameters:} Comma-separated list of inputs (can be empty)
+    \item \textbf{Docstring:} First line after definition, documenting the function
+    \item \textbf{Function body:} Indented code block
+    \item \textbf{return statement:} Optional, sends value back to caller
+\end{enumerate}
+
+\textbf{Simple Example:}
+\begin{lstlisting}[caption={A simple function example}]
+def greet(name):
+    """Print a greeting message."""
+    message = f"Hello, {name}!"
+    return message
+
+# Call the function
+result = greet("Alice")
+print(result)  # "Hello, Alice!"
+\end{lstlisting}
+
+\textbf{Fibonacci Example:}
+\begin{lstlisting}[caption={Fibonacci sequence function}]
+def fib(n):
+    """Return the nth Fibonacci number.
+    
+    The Fibonacci sequence is: 0, 1, 1, 2, 3, 5, 8, 13, ...
+    where each number is the sum of the two preceding ones.
+    
+    Args:
+        n: The index of the Fibonacci number to compute (0-based)
+    
+    Returns:
+        The nth Fibonacci number
+    """
+    a = 0
+    b = 1
+    for i in range(n):
+        tmp = a
+        a = a + b
+        b = tmp
+    return a
+
+# Test the function
+print(fib(0))   # 0
+print(fib(1))   # 1
+print(fib(5))   # 5
+print(fib(10))  # 55
+\end{lstlisting}
+
+\subsection{Function Characteristics}
+
+\textbf{No Type Declarations:}
+\begin{lstlisting}[caption={Python functions don't declare types}]
+# Python (no types)
+def add(a, b):
+    return a + b
+
+# C++ (with types)
+// int add(int a, int b) {
+//     return a + b;
+// }
+
+# Python function works with any types that support +
+print(add(5, 3))           # 8
+print(add(2.5, 1.5))       # 4.0
+print(add("Hello", "!"))   # "Hello!"
+print(add([1], [2]))       # [1, 2]
+\end{lstlisting}
+
+\textbf{Always Have Return Value:}
+\begin{lstlisting}[caption={Functions always return something}]
+def no_explicit_return():
+    print("No return statement")
+
+result = no_explicit_return()
+print(result)  # None
+
+# Explicit return of None
+def explicit_none():
+    return None
+
+# Early return
+def absolute(x):
+    if x < 0:
+        return -x
+    return x
+\end{lstlisting}
+
+\textbf{Functions are Objects:}
+\begin{lstlisting}[caption={Functions as first-class objects}]
+def square(x):
+    return x ** 2
+
+def cube(x):
+    return x ** 3
+
+# Store functions in list
+operations = [square, cube]
+
+# Call functions from list
+for op in operations:
+    print(op(3))  # 9, then 27
+
+# Pass function as argument
+def apply_twice(func, value):
+    return func(func(value))
+
+result = apply_twice(square, 2)  # square(square(2)) = 16
+
+# Return function from function
+def make_multiplier(n):
+    def multiplier(x):
+        return x * n
+    return multiplier
+
+times_three = make_multiplier(3)
+print(times_three(5))  # 15
+\end{lstlisting}
+
+\textbf{No Function Overloading:}
+\begin{lstlisting}[caption={Python doesn't support function overloading}]
+# In C++, you can have:
+// int add(int a, int b);
+// double add(double a, double b);
+// int add(int a, int b, int c);
+
+# In Python, later definition replaces earlier
+def add(a, b):
+    return a + b
+
+def add(a, b, c):  # This REPLACES the previous add()
+    return a + b + c
+
+result = add(1, 2)  # TypeError: missing required argument 'c'
+\end{lstlisting}
+
+\textbf{Note:} Operator overloading for classes works differently and is supported through magic methods (covered later).
+
+\subsection{Default Parameter Values}
+
+Functions can specify default values for parameters:
+
+\begin{lstlisting}[caption={Functions with default parameters}]
+def greet(name, greeting="Hello", punctuation="!"):
+    """Greet someone with customizable message.
+    
+    Args:
+        name: Person's name (required)
+        greeting: Greeting word (default: "Hello")
+        punctuation: Ending punctuation (default: "!")
+    """
+    return f"{greeting}, {name}{punctuation}"
+
+# Use all defaults
+print(greet("Alice"))  # "Hello, Alice!"
+
+# Override greeting
+print(greet("Bob", "Hi"))  # "Hi, Bob!"
+
+# Override all
+print(greet("Charlie", "Hey", "."))  # "Hey, Charlie."
+\end{lstlisting}
+
+\textbf{Rules for Default Parameters:}
+\begin{enumerate}
+    \item Parameters with defaults must come after those without defaults
+    \item Default values are evaluated once at function definition time
+    \item Mutable default arguments can cause surprising behavior (discussed later)
+\end{enumerate}
+
+\begin{lstlisting}[caption={Valid and invalid parameter ordering}]
+# Valid
+def func1(a, b, c=0, d=1):
+    pass
+
+# Invalid: non-default after default
+def func2(a, b=0, c):  # SyntaxError
+    pass
+
+# Valid: all have defaults
+def func3(a=1, b=2, c=3):
+    pass
+\end{lstlisting}
+
+\subsection{Keyword Arguments}
+
+Parameters can be passed by name (keyword arguments) rather than position:
+
+\begin{lstlisting}[caption={Using keyword arguments}]
+def describe_pet(animal, name, age=1):
+    """Describe a pet."""
+    return f"{name} is a {age}-year-old {animal}"
+
+# Positional arguments
+print(describe_pet("dog", "Rex", 3))
+
+# Keyword arguments (any order)
+print(describe_pet(name="Whiskers", animal="cat", age=2))
+
+# Mix positional and keyword (positional first)
+print(describe_pet("bird", name="Tweety"))
+
+# Skip optional parameters
+print(describe_pet("hamster", "Fuzzy"))  # Uses default age=1
+
+# Can skip middle parameters with keywords
+def config(host, port=8080, timeout=30, retry=3):
+    pass
+
+config("localhost", retry=5)  # Skips port and timeout
+\end{lstlisting}
+
+\textbf{Benefits of Keyword Arguments:}
+\begin{itemize}
+    \item Makes function calls self-documenting
+    \item Allows skipping optional parameters
+    \item Order-independent
+    \item Reduces errors when functions have many parameters
+\end{itemize}
+
+\subsection{Variable-Length Arguments}
+
+Functions can accept variable numbers of arguments:
+
+\textbf{*args (Variadic Positional Arguments):}
+\begin{lstlisting}[caption={Using *args for variable positional arguments}]
+def sum_all(*args):
+    """Sum any number of arguments."""
+    total = 0
+    for num in args:
+        total += num
+    return total
+
+print(sum_all(1, 2, 3))        # 6
+print(sum_all(1, 2, 3, 4, 5))  # 15
+print(sum_all())                # 0
+
+# args is a tuple
+def print_args(*args):
+    print(f"Received {len(args)} arguments:")
+    print(f"Type: {type(args)}")  # <class 'tuple'>
+    for i, arg in enumerate(args):
+        print(f"  arg[{i}] = {arg}")
+
+print_args(1, "two", 3.0)
+\end{lstlisting}
+
+\textbf{**kwargs (Variadic Keyword Arguments):}
+\begin{lstlisting}[caption={Using **kwargs for variable keyword arguments}]
+def print_config(**kwargs):
+    """Print configuration options."""
+    print("Configuration:")
+    for key, value in kwargs.items():
+        print(f"  {key} = {value}")
+
+print_config(host="localhost", port=8080, debug=True)
+
+# kwargs is a dictionary
+def collect_kwargs(**kwargs):
+    print(f"Type: {type(kwargs)}")  # <class 'dict'>
+    return kwargs
+
+config = collect_kwargs(a=1, b=2, c=3)
+print(config)  # {'a': 1, 'b': 2, 'c': 3}
+\end{lstlisting}
+
+\textbf{Complete Parameter Syntax:}
+\begin{lstlisting}[caption={All parameter types together}]
+def complex_function(a, b=2, *args, c, d=4, e, **kwargs):
+    """Demonstrate all parameter types.
+    
+    Args:
+        a: Required positional argument
+        b: Positional argument with default
+        *args: Variable positional arguments
+        c: Required keyword-only argument
+        d: Keyword-only argument with default
+        e: Required keyword-only argument
+        **kwargs: Variable keyword arguments
+    """
+    print(f"a={a}, b={b}")
+    print(f"args={args}")
+    print(f"c={c}, d={d}, e={e}")
+    print(f"kwargs={kwargs}")
+
+# Example call
+complex_function(1, 3, 5, 6, c=7, e=8, x=9, y=10)
+# Output:
+# a=1, b=3
+# args=(5, 6)
+# c=7, d=4, e=8
+# kwargs={'x': 9, 'y': 10}
+\end{lstlisting}
+
+\textbf{Parameter Order Rules:}
+\begin{enumerate}
+    \item Regular positional parameters
+    \item Positional parameters with defaults
+    \item \texttt{*args} (variadic positional)
+    \item Keyword-only parameters (with or without defaults)
+    \item \texttt{**kwargs} (variadic keyword)
+\end{enumerate}
+
+\subsection{Unpacking Arguments}
+
+Use \texttt{*} and \texttt{**} to unpack sequences and dictionaries:
+
+\begin{lstlisting}[caption={Unpacking arguments with * and **}]
+def add_three(a, b, c):
+    return a + b + c
+
+# Unpack list with *
+numbers = [1, 2, 3]
+result = add_three(*numbers)  # Same as add_three(1, 2, 3)
+
+# Unpack dictionary with **
+config = {'a': 1, 'b': 2, 'c': 3}
+result = add_three(**config)  # Same as add_three(a=1, b=2, c=3)
+
+# Practical example: combining lists
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+combined = [*list1, *list2]  # [1, 2, 3, 4, 5, 6]
+
+# Combining dictionaries
+dict1 = {'a': 1, 'b': 2}
+dict2 = {'c': 3, 'd': 4}
+combined = {**dict1, **dict2}  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+\end{lstlisting}
+
+\subsection{Lambda Functions}
+
+Lambda functions are small anonymous functions:
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={Lambda function syntax}]
+lambda parameters: expression
+\end{lstlisting}
+
+\textbf{Examples:}
+\begin{lstlisting}[caption={Lambda function examples}]
+# Simple lambda
+square = lambda x: x ** 2
+print(square(5))  # 25
+
+# Equivalent to:
+def square(x):
+    return x ** 2
+
+# Multiple parameters
+add = lambda a, b: a + b
+print(add(3, 5))  # 8
+
+# Use in sorting
+students = [('Alice', 85), ('Bob', 92), ('Charlie', 78)]
+students.sort(key=lambda student: student[1])  # Sort by grade
+print(students)  # [('Charlie', 78), ('Alice', 85), ('Bob', 92)]
+
+# Use with map()
+numbers = [1, 2, 3, 4, 5]
+doubled = list(map(lambda x: x * 2, numbers))
+print(doubled)  # [2, 4, 6, 8, 10]
+
+# Use with filter()
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4]
+
+# Passing function as argument
+def apply(func, x):
+    return func(x)
+
+result = apply(lambda z: z ** 2, 5)  # 25
+\end{lstlisting}
+
+\textbf{When to Use Lambda:}
+\begin{itemize}
+    \item Single, simple expressions
+    \item As arguments to higher-order functions
+    \item Short-lived functions not reused elsewhere
+\end{itemize}
+
+\textbf{When NOT to Use Lambda:}
+\begin{itemize}
+    \item Complex logic requiring multiple statements
+    \item Functions that will be reused (use \texttt{def} instead)
+    \item When debugging (named functions are clearer)
+    \item When documentation is important (lambdas can't have docstrings)
+\end{itemize}
+
+\section{Coding Style and Conventions}
+
+Python places exceptional emphasis on code readability and consistency. Following established conventions makes code easier to read, maintain, and collaborate on.
+
+\subsection{PEP 8: The Python Style Guide}
+
+PEP 8 is the official style guide for Python code, and adherence to it is considered essential in the Python community.
+
+\textbf{URL:} \url{https://www.python.org/dev/peps/pep-0008/}
+
+\textbf{Core Rules:}
+
+\begin{enumerate}
+    \item \textbf{Indentation:}
+    \begin{itemize}
+        \item Use 4 spaces per indentation level
+        \item NEVER use tabs
+        \item NEVER mix tabs and spaces
+    \end{itemize}
+    
+    \item \textbf{Line Length:}
+    \begin{itemize}
+        \item Maximum 79 characters for code
+        \item Maximum 72 characters for docstrings/comments
+    \end{itemize}
+    
+    \item \textbf{Blank Lines:}
+    \begin{itemize}
+        \item Two blank lines between top-level functions and classes
+        \item One blank line between methods inside a class
+        \item Use blank lines sparingly to separate logical sections
+    \end{itemize}
+    
+    \item \textbf{Imports:}
+    \begin{itemize}
+        \item Each import on separate line
+        \item Imports at top of file
+        \item Group imports: standard library, third-party, local
+        \item Use absolute imports when possible
+    \end{itemize}
+    
+    \item \textbf{Whitespace:}
+    \begin{itemize}
+        \item No spaces inside parentheses, brackets, or braces
+        \item Space around binary operators
+        \item No space before function call parentheses
+    \end{itemize}
+    
+    \item \textbf{Naming Conventions:}
+    \begin{itemize}
+        \item \texttt{lowercase\_with\_underscores} for functions and variables
+        \item \texttt{UPPERCASE\_WITH\_UNDERSCORES} for constants
+        \item \texttt{CapitalizedWords} for class names
+        \item \texttt{\_leading\_underscore} for internal/private
+    \end{itemize}
+    
+    \item \textbf{Documentation:}
+    \begin{itemize}
+        \item Use docstrings for all public modules, functions, classes, and methods
+        \item Use inline comments sparingly
+        \item Keep comments up-to-date
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Example of Good Style:}
+\begin{lstlisting}[caption={Well-styled Python code following PEP 8}]
+"""Module for geometric calculations.
+
+This module provides functions for calculating areas and volumes
+of basic geometric shapes.
+"""
+
+import math
+import sys
+
+# Constants
+PI = 3.14159265359
+GOLDEN_RATIO = 1.618
+
+
+class Circle:
+    """Represent a circle with radius and center coordinates."""
+    
+    def __init__(self, radius, center_x=0, center_y=0):
+        """Initialize circle with radius and optional center.
+        
+        Args:
+            radius: Circle radius (must be positive)
+            center_x: X coordinate of center (default: 0)
+            center_y: Y coordinate of center (default: 0)
+        """
+        self.radius = radius
+        self.center_x = center_x
+        self.center_y = center_y
+    
+    def area(self):
+        """Calculate and return the circle's area."""
+        return math.pi * self.radius ** 2
+
+
+def calculate_rectangle_area(width, height):
+    """Calculate the area of a rectangle.
+    
+    Args:
+        width: Rectangle width
+        height: Rectangle height
+    
+    Returns:
+        The area as a float
+    
+    Raises:
+        ValueError: If width or height is negative
+    """
+    if width < 0 or height < 0:
+        raise ValueError("Dimensions must be non-negative")
+    
+    return width * height
+
+
+def main():
+    """Main program entry point."""
+    circle = Circle(5.0)
+    area = circle.area()
+    print(f"Circle area: {area:.2f}")
+
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+\subsection{Enforcing Style with Tools}
+
+Rather than manually checking style, use automated tools:
+
+\textbf{Code Formatters (Automatic Formatting):}
+\begin{itemize}
+    \item \textbf{Black:} Opinionated formatter, very popular
+    \begin{lstlisting}[language=bash]
+pip install black
+black myfile.py  # Formats file in-place
+    \end{lstlisting}
+    
+    \item \textbf{autopep8:} Formats to conform to PEP 8
+    \begin{lstlisting}[language=bash]
+pip install autopep8
+autopep8 --in-place --aggressive myfile.py
+    \end{lstlisting}
+    
+    \item \textbf{yapf:} Google's formatter
+\end{itemize}
+
+\textbf{Linters (Style Checking):}
+\begin{itemize}
+    \item \textbf{pylint:} Comprehensive style and error checker
+    \begin{lstlisting}[language=bash]
+pip install pylint
+pylint myfile.py
+    \end{lstlisting}
+    
+    \item \textbf{flake8:} Combines pycodestyle, pyflakes, and McCabe complexity
+    \begin{lstlisting}[language=bash]
+pip install flake8
+flake8 myfile.py
+    \end{lstlisting}
+    
+    \item \textbf{mypy:} Optional static type checker
+    \begin{lstlisting}[language=bash]
+pip install mypy
+mypy myfile.py
+    \end{lstlisting}
+\end{itemize}
+
+\textbf{Complete List:} \url{https://github.com/life4/awesome-python-code-formatters}
+
+\subsection{Editor Configuration}
+
+Configure your editor to help maintain style:
+
+\begin{itemize}
+    \item Set tab key to insert 4 spaces
+    \item Enable visible whitespace characters
+    \item Install Python syntax highlighting
+    \item Enable automatic PEP 8 checking
+    \item Configure automatic formatting on save
+    \item Set line length marker at 79 characters
+\end{itemize}
+
+\subsection{Interesting Style-Related Facts}
+
+\textbf{Spaces vs. Tabs:}
+\begin{itemize}
+    \item Stack Overflow 2017: Developers using spaces earn more (\url{https://stackoverflow.blog/2017/06/15/developers-use-spaces-make-money-use-tabs/})
+    \item Correlation, not causation (likely reflects attention to detail)
+    \item Python 3 explicitly disallows mixing
+\end{itemize}
+
+\textbf{Coding Horror:}
+"Death to the Space Infidels" - \url{https://blog.codinghorror.com/death-to-the-space-infidels/}
+
+\section{How Function Arguments Work: Pass by Assignment}
+
+Understanding how Python passes arguments to functions is crucial for avoiding common pitfalls and understanding unexpected behavior.
+
+\subsection{The Mystery}
+
+Consider these two functions:
+
+\begin{lstlisting}[caption={A puzzling behavior}]
+# Function 1: Incrementing an integer
+def incr(x):
+    x += 1
+
+x = 0
+incr(x)
+print(x)  # Prints: 0 (unchanged!)
+
+# Function 2: Incrementing first element of list
+def incr_first(x):
+    x[0] += 1
+
+x = [0, 1, 2]
+incr_first(x)
+print(x)  # Prints: [1, 1, 2] (changed!)
+\end{lstlisting}
+
+The first looks like "pass by value" (value unchanged), the second like "pass by reference" (value changed). What's really happening?
+
+\subsection{Understanding Python's Object Model}
+
+Python uses a unique approach called \textbf{"pass by assignment"} or \textbf{"call by object reference"}:
+
+\textbf{Key Concepts:}
+\begin{enumerate}
+    \item \textbf{Variables are names, not containers}
+    \begin{itemize}
+        \item Variables don't "contain" values; they're labels that "refer to" objects
+        \item Like name tags stuck on objects
+    \end{itemize}
+    
+    \item \textbf{Objects live in a separate space}
+    \begin{itemize}
+        \item All objects exist in memory (the "object space")
+        \item Variables are just names that point to these objects
+    \end{itemize}
+    
+    \item \textbf{Assignment doesn't copy data}
+    \begin{itemize}
+        \item Assignment makes a name refer to an object
+        \item Multiple names can refer to the same object
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{placeholder_python_object_model_diagram.png}
+\caption{Python's object model: Variables are labels (names) that bind to objects in memory. The same object can have multiple names referring to it. When you write x = 5, you're creating a label 'x' that points to an integer object 5 in memory.}
+\end{figure}
+
+\subsection{Step-by-Step: The Integer Example}
+
+\textbf{Step 1: Initial assignment}
+\begin{lstlisting}
+x = 0
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step1.png}
+\caption{Global scope contains name 'x' pointing to integer object 0 in object space.}
+\end{figure}
+
+\textbf{Step 2: Function called}
+\begin{lstlisting}
+incr(x)  # Call the function
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step2.png}
+\caption{Local scope created with parameter 'x' pointing to the same integer object 0. Both global and local 'x' refer to the same object.}
+\end{figure}
+
+\textbf{Step 3: Inside function - increment}
+\begin{lstlisting}
+def incr(x):
+    x += 1  # This line executes
+\end{lstlisting}
+
+Because integers are IMMUTABLE, this creates a NEW object:
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step3.png}
+\caption{Integer 0 cannot be modified. Python creates new integer object 1, and local 'x' now points to it. Global 'x' still points to 0.}
+\end{figure}
+
+\textbf{Step 4: Function returns}
+\begin{lstlisting}
+print(x)  # Back in global scope
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step4.png}
+\caption{Local scope destroyed. Global 'x' still points to 0 (unchanged). The integer object 1 has no references and will be garbage collected.}
+\end{figure}
+
+\textbf{Result:} Global \texttt{x} is unchanged because integers are immutable, and the local reassignment created a new object that the global name never saw.
+
+\subsection{Step-by-Step: The List Example}
+
+\textbf{Step 1: Initial assignment}
+\begin{lstlisting}
+x = [0, 1, 2]
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step1.png}
+\caption{Global 'x' points to a list object containing three elements.}
+\end{figure}
+
+\textbf{Step 2: Function called}
+\begin{lstlisting}
+incr_first(x)
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step2.png}
+\caption{Local 'x' created, pointing to the SAME list object as global 'x'.}
+\end{figure}
+
+\textbf{Step 3: Inside function - modify}
+\begin{lstlisting}
+def incr_first(x):
+    x[0] += 1  # This line executes
+\end{lstlisting}
+
+Because lists are MUTABLE, this modifies the existing object:
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step3.png}
+\caption{The list object itself is modified in-place. The first element changes from 0 to 1. Both local and global 'x' point to this same modified list.}
+\end{figure}
+
+\textbf{Step 4: Function returns}
+\begin{lstlisting}
+print(x)  # Back in global scope
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step4.png}
+\caption{Local scope destroyed. Global 'x' points to the list, which was modified. Changes are visible!}
+\end{figure}
+
+\textbf{Result:} Global \texttt{x} reflects the change because lists are mutable, and both names pointed to the same list object that was modified in-place.
+
+\subsection{The Critical Distinction}
+
+The key is \textbf{mutability}:
+
+\textbf{Immutable Objects (int, float, str, tuple):}
+\begin{itemize}
+    \item Any "modification" creates a new object
+    \item Local reassignment doesn't affect global variables
+    \item Behaves like "pass by value"
+\end{itemize}
+
+\textbf{Mutable Objects (list, dict, set):}
+\begin{itemize}
+    \item Can be modified in-place
+    \item Modifications are visible to all names referencing the object
+    \item Behaves like "pass by reference"
+\end{itemize}
+
+\subsection{Assignment and Aliasing}
+
+This same behavior applies to simple assignment:
+
+\begin{lstlisting}[caption={Assignment creates references, not copies}]
+# Lists (mutable)
+x = [1, 2, 3]
+y = x  # y refers to the SAME list as x
+
+y[0] = 99
+print(x)  # [99, 2, 3] - x is affected!
+print(y)  # [99, 2, 3]
+
+# Integers (immutable)
+a = 5
+b = a  # b refers to the SAME integer as a
+
+b += 1  # Creates NEW integer, rebinds b
+print(a)  # 5 - a is unchanged
+print(b)  # 6
+\end{lstlisting}
+
+\subsection{Copying Objects}
+
+To create independent copies, use the \texttt{copy} module:
+
+\textbf{Shallow Copy:}
+\begin{lstlisting}[caption={Shallow copying}]
+import copy
+
+x = [1, 2, 3]
+y = copy.copy(x)  # or y = x.copy() or y = x[:]
+
+y[0] = 99
+print(x)  # [1, 2, 3] - x unchanged
+print(y)  # [99, 2, 3]
+\end{lstlisting}
+
+\textbf{Shallow Copy Limitation:}
+Shallow copy only copies the top level:
+
+\begin{lstlisting}[caption={Shallow copy limitation with nested lists}]
+import copy
+
+x = [1, 2, [3, 4]]
+y = copy.copy(x)
+
+y[2][0] = 99
+print(x)  # [1, 2, [99, 4]] - inner list still shared!
+print(y)  # [1, 2, [99, 4]]
+\end{lstlisting}
+
+\textbf{Deep Copy:}
+Deep copy recursively copies all nested objects:
+
+\begin{lstlisting}[caption={Deep copying}]
+import copy
+
+x = [1, 2, [3, 4]]
+y = copy.deepcopy(x)
+
+y[2][0] = 99
+print(x)  # [1, 2, [3, 4]] - completely independent!
+print(y)  # [1, 2, [99, 4]]
+\end{lstlisting}
+
+\textbf{The copy module documentation states:}
+"The difference between shallow and deep copying is only relevant for compound objects (objects that contain other objects, like lists or class instances)."
+
+\subsection{Practical Implications}
+
+\textbf{Avoiding Unintended Modifications:}
+\begin{lstlisting}[caption={Defensive copying to avoid side effects}]
+def process_list(data):
+    """Process list without modifying original."""
+    # Make a copy to avoid side effects
+    data = data.copy()
+    data.sort()
+    # ... other operations
+    return data
+
+original = [3, 1, 4, 1, 5]
+result = process_list(original)
+print(original)  # [3, 1, 4, 1, 5] - unchanged
+print(result)    # [1, 1, 3, 4, 5] - sorted
+\end{lstlisting}
+
+\textbf{Mutable Default Arguments:}
+A common pitfall:
+
+\begin{lstlisting}[caption={Mutable default arguments pitfall}]
+# WRONG: Mutable default argument
+def add_item(item, items=[]):
+    items.append(item)
+    return items
+
+print(add_item(1))  # [1]
+print(add_item(2))  # [1, 2] - Unexpected!
+print(add_item(3))  # [1, 2, 3] - Shared list!
+
+# RIGHT: Use None as default
+def add_item_correct(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+print(add_item_correct(1))  # [1]
+print(add_item_correct(2))  # [2] - Fresh list
+print(add_item_correct(3))  # [3] - Each call independent
+\end{lstlisting}
+
+\section{Object-Oriented Programming: Classes}
+
+Python supports object-oriented programming (OOP), allowing you to define custom types with their own data and behavior.
+
+\subsection{Defining Classes}
+
+\textbf{Syntax:}
+\begin{lstlisting}[caption={Basic class definition syntax}]
+class ClassName:
+    """Class docstring."""
+    
+    def __init__(self, parameters):
+        """Constructor/initializer."""
+        self.attribute = value
+    
+    def method(self, parameters):
+        """Instance method."""
+        # Method body
+\end{lstlisting}
+
+\textbf{Simple Example:}
+\begin{lstlisting}[caption={A simple Point class}]
+class Point:
+    """Represent a 2D point with x and y coordinates."""
+    
+    def __init__(self, x, y):
+        """Initialize point with coordinates.
+        
+        Args:
+            x: X coordinate
+            y: Y coordinate
+        """
+        self.x = x
+        self.y = y
+
+# Create instances
+p1 = Point(1, 2)
+p2 = Point(3, 4)
+
+# Access attributes
+print(p1.x)  # 1
+print(p1.y)  # 2
+
+# Can add attributes dynamically
+p1.z = 5  # Adds new attribute to p1 only
+print(p1.z)  # 5
+# print(p2.z)  # AttributeError - p2 doesn't have z
+\end{lstlisting}
+
+\subsection{The self Parameter}
+
+\textbf{Critical Convention:} The first parameter of instance methods is always \texttt{self}:
+
+\begin{itemize}
+    \item Refers to the instance the method is called on
+    \item Equivalent to C++'s implicit \texttt{this} pointer
+    \item Name \texttt{self} is convention (could technically be anything, but ALWAYS use \texttt{self})
+    \item Must be explicit in Python (unlike C++)
+\end{itemize}
+
+\begin{lstlisting}[caption={Understanding self}]
+class Counter:
+    def __init__(self):
+        self.count = 0
+    
+    def increment(self):
+        self.count += 1  # self refers to the instance
+    
+    def get_count(self):
+        return self.count
+
+c1 = Counter()
+c2 = Counter()
+
+c1.increment()
+c1.increment()
+c2.increment()
+
+print(c1.get_count())  # 2
+print(c2.get_count())  # 1 (separate instance)
+
+# When you call c1.increment():
+# Python actually calls Counter.increment(c1)
+# self parameter receives c1
+\end{lstlisting}
+
+\subsection{The Constructor: \_\_init\_\_}
+
+The \texttt{\_\_init\_\_} method is the constructor, called when creating new instances:
+
+\begin{lstlisting}[caption={Constructor examples}]
+class Rectangle:
+    """Represent a rectangle."""
+    
+    def __init__(self, width, height):
+        """Initialize rectangle with dimensions.
+        
+        Args:
+            width: Rectangle width
+            height: Rectangle height
+        """
+        self.width = width
+        self.height = height
+    
+    def area(self):
+        """Calculate and return area."""
+        return self.width * self.height
+    
+    def perimeter(self):
+        """Calculate and return perimeter."""
+        return 2 * (self.width + self.height)
+
+# Create instance
+rect = Rectangle(10, 5)
+
+# Call methods
+print(f"Area: {rect.area()}")          # 50
+print(f"Perimeter: {rect.perimeter()}") # 30
+\end{lstlisting}
+
+\textbf{Key Points:}
+\begin{itemize}
+    \item Name must be exactly \texttt{\_\_init\_\_} (double underscores)
+    \item Called automatically when creating instance
+    \item Doesn't return anything (implicitly returns \texttt{None})
+    \item Initializes instance attributes with \texttt{self.attribute = value}
+\end{itemize}
+
+\subsection{Instance Methods}
+
+Methods are functions defined inside a class:
+
+\begin{lstlisting}[caption={Instance methods}]
+class BankAccount:
+    """Represent a simple bank account."""
+    
+    def __init__(self, owner, balance=0):
+        """Initialize account.
+        
+        Args:
+            owner: Account owner's name
+            balance: Initial balance (default: 0)
+        """
+        self.owner = owner
+        self.balance = balance
+    
+    def deposit(self, amount):
+        """Deposit money into account.
+        
+        Args:
+            amount: Amount to deposit
+        
+        Raises:
+            ValueError: If amount is negative
+        """
+        if amount < 0:
+            raise ValueError("Cannot deposit negative amount")
+        self.balance += amount
+    
+    def withdraw(self, amount):
+        """Withdraw money from account.
+        
+        Args:
+            amount: Amount to withdraw
+        
+        Returns:
+            True if successful, False if insufficient funds
+        """
+        if amount > self.balance:
+            return False
+        self.balance -= amount
+        return True
+    
+    def get_balance(self):
+        """Return current balance."""
+        return self.balance
+
+# Usage
+account = BankAccount("Alice", 1000)
+account.deposit(500)
+account.withdraw(200)
+print(account.get_balance())  # 1300
+\end{lstlisting}
+
+\subsection{Python vs. C++ Classes}
+
+\textbf{Key Differences:}
+
+\begin{lstlisting}[caption={Comparing Python and C++ classes}]
+# Python
+class Point:
+    def __init__(self, x, y):
+        self.x = x  # Attributes created in __init__
+        self.y = y
+
+p = Point(1, 2)
+p.z = 3  # Can add attributes dynamically!
+
+# C++
+// struct Point {
+//     Point(double x, double y) : x(x), y(y) {}
+//     double x, y;  // Members declared in class
+// };
+// 
+// Point p(1, 2);
+// p.z = 3;  // ERROR: z not declared
+
+\end{lstlisting}
+
+\textbf{Comparison Table:}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{5cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Feature} & \textbf{Python} & \textbf{C++} \\
+\hline
+Member declaration & Implicitly in \texttt{\_\_init\_\_} & Explicitly in class body \\
+\hline
+self/this parameter & Explicit \texttt{self} & Implicit \texttt{this} \\
+\hline
+Adding attributes & Can add dynamically & Fixed at compile time \\
+\hline
+Privacy & Convention-based & Enforced by compiler \\
+\hline
+Constructor name & \texttt{\_\_init\_\_} & Class name \\
+\hline
+Type checking & Runtime & Compile time \\
+\hline
+\end{tabular}
+\caption{Python vs C++ class features}
+\end{table}
+
+\section{Privacy in Python Classes}
+
+Python's approach to privacy is fundamentally different from C++.
+
+\subsection{Convention-Based Privacy}
+
+Python has no enforced privacy mechanism. Instead, it relies on conventions:
+
+\textbf{The Convention:}
+\begin{itemize}
+    \item Names with leading underscore (\texttt{\_name}) are considered "internal" or "private"
+    \item This is a signal to other programmers, not a restriction
+    \item Python programmers follow the philosophy: "We're all consenting adults here"
+\end{itemize}
+
+\begin{lstlisting}[caption={Privacy by convention in Python}]
+class BankAccount:
+    """A bank account with conventional privacy."""
+    
+    def __init__(self, owner, balance):
+        """Initialize account."""
+        self._owner = owner      # "Private" by convention
+        self._balance = balance  # "Private" by convention
+    
+    def deposit(self, amount):
+        """Public method to deposit money."""
+        self._balance += amount
+    
+    def get_balance(self):
+        """Public method to access balance."""
+        return self._balance
+
+# Usage
+account = BankAccount("Alice", 1000)
+
+# Proper usage (through public methods)
+account.deposit(500)
+print(account.get_balance())  # 1500
+
+# Can still access "private" attributes (not recommended!)
+print(account._balance)  # 1500 - works, but shouldn't do this
+account._balance = 0     # Can modify directly (bad practice!)
+\end{lstlisting}
+
+\subsection{Python vs. C++ Privacy}
+
+\begin{lstlisting}[caption={Privacy comparison: Python vs C++}]
+# Python
+class Point:
+    def __init__(self, x, y):
+        self._x = x  # Convention: private
+        self._y = y
+    
+    def get_x(self):
+        return self._x
+
+p = Point(1, 2)
+print(p._x)  # Works, but violates convention
+
+# C++
+// class Point {
+// public:
+//     Point(double x, double y) : x(x), y(y) {}
+//     double get_x() const { return x; }
+// private:
+//     double x, y;
+// };
+// 
+// Point p(1, 2);
+// p.x;  // COMPILATION ERROR - truly private
+\end{lstlisting}
+
+\subsection{Name Mangling}
+
+Python provides a stronger privacy mechanism for class-internal names:
+
+\begin{lstlisting}[caption={Name mangling with double underscores}]
+class MyClass:
+    def __init__(self):
+        self.__private = "truly private"  # Double underscore
+        self._internal = "semi-private"   # Single underscore
+    
+    def __private_method(self):
+        """Private method."""
+        return "secret"
+
+obj = MyClass()
+
+# Single underscore (accessible)
+print(obj._internal)  # Works
+
+# Double underscore (name mangled)
+# print(obj.__private)  # AttributeError
+
+# But can still access via mangled name (if you really want to)
+print(obj._MyClass__private)  # Works (mangled to _ClassName__name)
+\end{lstlisting}
+
+\textbf{Name Mangling Rules:}
+\begin{itemize}
+    \item Names starting with \texttt{\_\_} (but not ending with \texttt{\_\_}) are mangled
+    \item Mangled to \texttt{\_ClassName\_\_name}
+    \item Helps avoid name conflicts in inheritance
+    \item Not true privacy, just harder to access accidentally
+\end{itemize}
+
+\subsection{Why No True Privacy?}
+
+Python's philosophy emphasizes:
+\begin{itemize}
+    \item \textbf{Trust:} Programmers are expected to respect conventions
+    \item \textbf{Flexibility:} Can access internals for debugging or testing
+    \item \textbf{Simplicity:} Less language complexity
+    \item \textbf{Pragmatism:} Sometimes you need to bend the rules
+\end{itemize}
+
+\textbf{Official Documentation:} \url{https://docs.python.org/3/tutorial/classes.html#private-variables}
+
+\section{Class Variables and Static Data}
+
+Class variables are shared by all instances of a class:
+
+\subsection{Defining Class Variables}
+
+\begin{lstlisting}[caption={Class variables (static data)}]
+class Point:
+    """A 2D point class."""
+    
+    # Class variable (shared by all instances)
+    dimensions = 2
+    
+    def __init__(self, x, y):
+        """Initialize point."""
+        # Instance variables (unique to each instance)
+        self.x = x
+        self.y = y
+
+# Access class variable through class
+print(Point.dimensions)  # 2
+
+# Access through instances
+p1 = Point(1, 2)
+p2 = Point(3, 4)
+print(p1.dimensions)  # 2
+print(p2.dimensions)  # 2
+
+# Modify class variable
+Point.dimensions = 3
+print(p1.dimensions)  # 3 (all instances see change)
+print(p2.dimensions)  # 3
+\end{lstlisting}
+
+\subsection{Class Variables vs. Instance Variables}
+
+\begin{lstlisting}[caption={Distinguishing class and instance variables}]
+class Counter:
+    """Track instances and individual counts."""
+    
+    # Class variable - shared by all instances
+    total_instances = 0
+    
+    def __init__(self):
+        """Initialize counter."""
+        # Increment class variable
+        Counter.total_instances += 1
+        
+        # Instance variable - unique to this instance
+        self.count = 0
+    
+    def increment(self):
+        """Increment this counter."""
+        self.count += 1
+
+# Create instances
+c1 = Counter()
+c2 = Counter()
+c3 = Counter()
+
+print(Counter.total_instances)  # 3
+
+c1.increment()
+c1.increment()
+c2.increment()
+
+print(c1.count)  # 2 (instance-specific)
+print(c2.count)  # 1 (instance-specific)
+print(c3.count)  # 0 (instance-specific)
+\end{lstlisting}
+
+\textbf{Warning - Shadowing:}
+\begin{lstlisting}[caption={Accidental shadowing of class variables}]
+class Point:
+    dimensions = 2
+
+p1 = Point()
+p2 = Point()
+
+# Modifying through instance creates instance variable!
+p1.dimensions = 3  # Creates NEW instance variable
+
+print(p1.dimensions)      # 3 (instance variable)
+print(p2.dimensions)      # 2 (class variable)
+print(Point.dimensions)   # 2 (class variable)
+
+# To modify class variable, use class name
+Point.dimensions = 3
+print(p2.dimensions)  # 3 (now sees updated class variable)
+\end{lstlisting}
+
+\subsection{Comparing with C++}
+
+\begin{lstlisting}[caption={Static members: Python vs C++}]
+# Python
+class Point:
+    dim = 2  # Class variable
+    
+    def __init__(self, x, y):
+        self._x = x
+        self._y = y
+
+Point.dim  # Access class variable
+
+# C++
+// struct Point {
+//     Point(double x, double y) : x(x), y(y) {}
+//     double x, y;
+//     static const int dim = 2;  // Static member
+// };
+// 
+// Point::dim;  // Access static member
+\end{lstlisting}
+
+\section{Magic Methods: Operator Overloading}
+
+Magic methods (also called "dunder methods" for double underscore) allow you to define how objects interact with Python's operators and built-in functions.
+
+\subsection{Understanding Magic Methods}
+
+\textbf{Magic methods} are special methods with names surrounded by double underscores that Python calls automatically in response to certain operations.
+
+\begin{lstlisting}[caption={Basic magic methods example}]
+class Point:
+    """2D point with operator overloading."""
+    
+    def __init__(self, x, y):
+        """Initialize point."""
+        self._x = x
+        self._y = y
+    
+    def __add__(self, other):
+        """Define point + point."""
+        return Point(self._x + other._x, self._y + other._y)
+    
+    def __str__(self):
+        """Define string representation for print()."""
+        return f"({self._x}, {self._y})"
+    
+    def __repr__(self):
+        """Define official string representation."""
+        return f"Point({self._x}, {self._y})"
+
+# Usage
+p1 = Point(1, 2)
+p2 = Point(3, 4)
+
+# Calls p1.__add__(p2)
+p3 = p1 + p2
+print(p3)  # Calls p3.__str__() -> "(4, 6)"
+
+# In interpreter
+# >>> p3
+# Point(4, 6)  # Calls p3.__repr__()
+\end{lstlisting}
+
+\subsection{Common Magic Methods}
+
+\textbf{Object Lifecycle:}
+\begin{lstlisting}[caption={Lifecycle magic methods}]
+class Resource:
+    """Demonstrate lifecycle methods."""
+    
+    def __init__(self, name):
+        """Constructor."""
+        self.name = name
+        print(f"Creating {self.name}")
+    
+    def __del__(self):
+        """Destructor (finalizer)."""
+        print(f"Destroying {self.name}")
+
+# Create and destroy
+r = Resource("MyResource")
+# ... use resource ...
+del r  # Explicitly delete (or wait for garbage collection)
+\end{lstlisting}
+
+\textbf{Arithmetic Operators:}
+\begin{lstlisting}[caption={Arithmetic operator overloading}]
+class Vector:
+    """Simple vector class."""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other):
+        """Vector addition: v1 + v2"""
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other):
+        """Vector subtraction: v1 - v2"""
+        return Vector(self.x - other.x, self.y - other.y)
+    
+    def __mul__(self, scalar):
+        """Scalar multiplication: v * scalar"""
+        return Vector(self.x * scalar, self.y * scalar)
+    
+    def __truediv__(self, scalar):
+        """Scalar division: v / scalar"""
+        return Vector(self.x / scalar, self.y / scalar)
+    
+    def __floordiv__(self, scalar):
+        """Floor division: v // scalar"""
+        return Vector(self.x // scalar, self.y // scalar)
+    
+    def __neg__(self):
+        """Negation: -v"""
+        return Vector(-self.x, -self.y)
+    
+    def __str__(self):
+        return f"Vector({self.x}, {self.y})"
+
+# Usage
+v1 = Vector(3, 4)
+v2 = Vector(1, 2)
+
+print(v1 + v2)   # Vector(4, 6)
+print(v1 - v2)   # Vector(2, 2)
+print(v1 * 2)    # Vector(6, 8)
+print(v1 / 2)    # Vector(1.5, 2.0)
+print(-v1)       # Vector(-3, -4)
+\end{lstlisting}
+
+\textbf{Comparison Operators:}
+\begin{lstlisting}[caption={Comparison operator overloading}]
+class Point:
+    """Point with comparison based on distance from origin."""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def distance_from_origin(self):
+        """Calculate distance from origin."""
+        return (self.x**2 + self.y**2)**0.5
+    
+    def __eq__(self, other):
+        """Equality: p1 == p2"""
+        return self.x == other.x and self.y == other.y
+    
+    def __ne__(self, other):
+        """Inequality: p1 != p2"""
+        return not self.__eq__(other)
+    
+    def __lt__(self, other):
+        """Less than: p1 < p2 (by distance)"""
+        return self.distance_from_origin() < other.distance_from_origin()
+    
+    def __le__(self, other):
+        """Less than or equal: p1 <= p2"""
+        return self.distance_from_origin() <= other.distance_from_origin()
+    
+    def __gt__(self, other):
+        """Greater than: p1 > p2"""
+        return self.distance_from_origin() > other.distance_from_origin()
+    
+    def __ge__(self, other):
+        """Greater than or equal: p1 >= p2"""
+        return self.distance_from_origin() >= other.distance_from_origin()
+
+# Usage
+p1 = Point(1, 1)
+p2 = Point(2, 2)
+
+print(p1 == p2)  # False
+print(p1 < p2)   # True (p1 closer to origin)
+print(p1 <= p2)  # True
+\end{lstlisting}
+
+\textbf{Container Emulation:}
+\begin{lstlisting}[caption={Container protocol magic methods}]
+class MyList:
+    """Simple list-like container."""
+    
+    def __init__(self, items):
+        self._items = list(items)
+    
+    def __len__(self):
+        """Return length: len(obj)"""
+        return len(self._items)
+    
+    def __getitem__(self, index):
+        """Get item: obj[index]"""
+        return self._items[index]
+    
+    def __setitem__(self, index, value):
+        """Set item: obj[index] = value"""
+        self._items[index] = value
+    
+    def __delitem__(self, index):
+        """Delete item: del obj[index]"""
+        del self._items[index]
+    
+    def __contains__(self, item):
+        """Membership test: item in obj"""
+        return item in self._items
+    
+    def __iter__(self):
+        """Make iterable: for item in obj"""
+        return iter(self._items)
+
+# Usage
+ml = MyList([1, 2, 3, 4, 5])
+
+print(len(ml))      # 5 - calls __len__
+print(ml[2])        # 3 - calls __getitem__
+ml[2] = 99          # calls __setitem__
+print(3 in ml)      # False - calls __contains__
+print(99 in ml)     # True
+
+for item in ml:     # calls __iter__
+    print(item)
+\end{lstlisting}
+
+\subsection{String Representation Methods}
+
+\begin{lstlisting}[caption={String representation magic methods}]
+class Point:
+    """Point with both string representations."""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __str__(self):
+        """Informal string for end users (print, str)."""
+        return f"Point at ({self.x}, {self.y})"
+    
+    def __repr__(self):
+        """Official string for developers (repr, interactive)."""
+        return f"Point({self.x}, {self.y})"
+
+p = Point(3, 4)
+
+print(str(p))   # "Point at (3, 4)" - uses __str__
+print(repr(p))  # "Point(3, 4)" - uses __repr__
+print(p)        # "Point at (3, 4)" - print uses __str__
+
+# In interactive interpreter:
+# >>> p
+# Point(3, 4)  # Uses __repr__
+\end{lstlisting}
+
+\textbf{Guidelines:}
+\begin{itemize}
+    \item \texttt{\_\_str\_\_}: Human-readable representation for end users
+    \item \texttt{\_\_repr\_\_}: Unambiguous representation for developers (ideally, code that recreates the object)
+    \item If only one is defined, \texttt{\_\_repr\_\_} is preferred as it's used as fallback
+\end{itemize}
+
+\subsection{Complete Magic Methods Reference}
+
+\textbf{Table of Common Magic Methods:}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Python Operation} & \textbf{Magic Method} & \textbf{C++ Equivalent} \\
+\hline
+\texttt{obj = Class()} & \texttt{\_\_init\_\_} & Constructor \\
+\texttt{del obj} & \texttt{\_\_del\_\_} & Destructor \\
+\texttt{str(obj)} & \texttt{\_\_str\_\_} & N/A \\
+\texttt{repr(obj)} & \texttt{\_\_repr\_\_} & N/A \\
+\texttt{a + b} & \texttt{\_\_add\_\_} & \texttt{operator+} \\
+\texttt{a - b} & \texttt{\_\_sub\_\_} & \texttt{operator-} \\
+\texttt{a * b} & \texttt{\_\_mul\_\_} & \texttt{operator*} \\
+\texttt{a / b} & \texttt{\_\_truediv\_\_} & \texttt{operator/} \\
+\texttt{a // b} & \texttt{\_\_floordiv\_\_} & N/A \\
+\texttt{a \% b} & \texttt{\_\_mod\_\_} & \texttt{operator\%} \\
+\texttt{a ** b} & \texttt{\_\_pow\_\_} & N/A \\
+\texttt{a == b} & \texttt{\_\_eq\_\_} & \texttt{operator==} \\
+\texttt{a != b} & \texttt{\_\_ne\_\_} & \texttt{operator!=} \\
+\texttt{a < b} & \texttt{\_\_lt\_\_} & \texttt{operator<} \\
+\texttt{a <= b} & \texttt{\_\_le\_\_} & \texttt{operator<=} \\
+\texttt{a > b} & \texttt{\_\_gt\_\_} & \texttt{operator>} \\
+\texttt{a >= b} & \texttt{\_\_ge\_\_} & \texttt{operator>=} \\
+\texttt{len(obj)} & \texttt{\_\_len\_\_} & N/A \\
+\texttt{obj[key]} & \texttt{\_\_getitem\_\_} & \texttt{operator[]} \\
+\texttt{obj[key] = val} & \texttt{\_\_setitem\_\_} & \texttt{operator[]} \\
+\texttt{del obj[key]} & \texttt{\_\_delitem\_\_} & N/A \\
+\texttt{item in obj} & \texttt{\_\_contains\_\_} & N/A \\
+\texttt{for x in obj} & \texttt{\_\_iter\_\_} & N/A \\
+\hline
+\end{tabular}
+\caption{Common magic methods and their uses}
+\end{table}
+
+\textbf{Complete Reference:} \url{https://docs.python.org/3/reference/datamodel.html}
+
+\section{Class Documentation with Docstrings}
+
+Proper documentation is crucial for maintainable code. Python uses docstrings for documentation.
+
+\subsection{Class and Method Docstrings}
+
+\begin{lstlisting}[caption={Comprehensive class documentation}]
+class Point:
+    """A simple two-dimensional Cartesian coordinate point.
+    
+    This class represents a point in 2D space with x and y coordinates.
+    It provides methods for common operations like scaling and computing
+    distance.
+    
+    Attributes:
+        _x: The x coordinate (private by convention)
+        _y: The y coordinate (private by convention)
+    
+    Examples:
+        >>> p1 = Point(3, 4)
+        >>> p2 = Point(0, 0)
+        >>> p1.distance_to(p2)
+        5.0
+    """
+    
+    # Class variable
+    dimensions = 2
+    
+    def __init__(self, x, y):
+        """Create a point from two Cartesian coordinates.
+        
+        Args:
+            x (float): The x coordinate
+            y (float): The y coordinate
+        
+        Raises:
+            TypeError: If x or y are not numeric
+        """
+        self._x = float(x)
+        self._y = float(y)
+    
+    def scale(self, sx=1, sy=1):
+        """Scale the point by factors in x and y directions.
+        
+        Multiplies the x coordinate by sx and the y coordinate by sy.
+        
+        Args:
+            sx (float): Scale factor for x direction (default: 1)
+            sy (float): Scale factor for y direction (default: 1)
+        
+        Examples:
+            >>> p = Point(2, 3)
+            >>> p.scale(2, 3)
+            >>> print(p)
+            Point(4.0, 9.0)
+        """
+        self._x *= sx
+        self._y *= sy
+    
+    def distance_to(self, other):
+        """Calculate Euclidean distance to another point.
+        
+        Args:
+            other (Point): The point to measure distance to
+        
+        Returns:
+            float: The Euclidean distance between the two points
+        
+        Examples:
+            >>> p1 = Point(0, 0)
+            >>> p2 = Point(3, 4)
+            >>> p1.distance_to(p2)
+            5.0
+        """
+        dx = self._x - other._x
+        dy = self._y - other._y
+        return (dx**2 + dy**2)**0.5
+    
+    def __str__(self):
+        """Return informal string representation."""
+        return f"Point({self._x}, {self._y})"
+\end{lstlisting}
+
+\subsection{Docstring Conventions}
+
+\textbf{PEP 257 - Docstring Conventions:} \url{https://www.python.org/dev/peps/pep-0257/}
+
+\textbf{Key Rules:}
+\begin{itemize}
+    \item Use triple double quotes: \texttt{"""docstring"""}
+    \item First line is a brief summary
+    \item Blank line separates summary from detailed description
+    \item Document all public modules, functions, classes, and methods
+    \item Use imperative mood ("Return the..." not "Returns the...")
+\end{itemize}
+
+\textbf{Popular Docstring Styles:}
+\begin{enumerate}
+    \item \textbf{NumPy Style:} Used extensively in scientific Python
+    \item \textbf{Google Style:} Clear and readable
+    \item \textbf{Sphinx/reStructuredText:} For generating documentation
+\end{enumerate}
+
+\textbf{Accessing Docstrings:}
+\begin{lstlisting}[caption={Accessing documentation}]
+# Get class docstring
+print(Point.__doc__)
+
+# Get method docstring
+print(Point.scale.__doc__)
+
+# Use help() function
+help(Point)
+help(Point.scale)
+
+# In IPython
+# Point?
+# Point.scale?
+\end{lstlisting}
+
+\section{Inheritance}
+
+Inheritance allows classes to derive behavior from parent classes while adding or overriding functionality.
+
+\subsection{Basic Inheritance}
+
+\begin{lstlisting}[caption={Basic class inheritance}]
+class Animal:
+    """Base class for animals."""
+    
+    def __init__(self, name, age):
+        """Initialize animal.
+        
+        Args:
+            name: Animal's name
+            age: Animal's age
+        """
+        self.name = name
+        self.age = age
+    
+    def speak(self):
+        """Make the animal speak."""
+        return "Some sound"
+    
+    def info(self):
+        """Return animal information."""
+        return f"{self.name} is {self.age} years old"
+
+
+class Dog(Animal):
+    """Dog class inheriting from Animal."""
+    
+    def __init__(self, name, age, breed):
+        """Initialize dog.
+        
+        Args:
+            name: Dog's name
+            age: Dog's age
+            breed: Dog's breed
+        """
+        # Call parent constructor
+        super().__init__(name, age)
+        self.breed = breed
+    
+    def speak(self):
+        """Override speak method."""
+        return "Woof!"
+    
+    def fetch(self):
+        """Dog-specific method."""
+        return f"{self.name} is fetching the ball!"
+
+
+class Cat(Animal):
+    """Cat class inheriting from Animal."""
+    
+    def __init__(self, name, age, color):
+        """Initialize cat."""
+        super().__init__(name, age)
+        self.color = color
+    
+    def speak(self):
+        """Override speak method."""
+        return "Meow!"
+
+# Usage
+dog = Dog("Rex", 3, "Labrador")
+cat = Cat("Whiskers", 2, "Orange")
+
+print(dog.name)        # Inherited attribute
+print(dog.info())      # Inherited method
+print(dog.speak())     # Overridden method: "Woof!"
+print(dog.fetch())     # Dog-specific method
+
+print(cat.speak())     # "Meow!"
+print(cat.info())      # Inherited method
+\end{lstlisting}
+
+\subsection{The super() Function}
+
+\textbf{Critical:} In Python, the parent class constructor is NOT called automatically. You must explicitly call it using \texttt{super()}.
+
+\begin{lstlisting}[caption={Using super() to call parent methods}]
+class A:
+    """Base class."""
+    
+    def __init__(self):
+        self.a = 1
+        print("A.__init__ called")
+    
+    def print_A(self):
+        print(f"a = {self.a}")
+
+
+class B(A):
+    """Derived class."""
+    
+    def __init__(self):
+        # MUST call parent constructor explicitly
+        super().__init__()
+        # Now self.a exists
+        self.b = 2
+        print("B.__init__ called")
+    
+    def print_B(self):
+        print(f"b = {self.b}")
+
+
+# Create instance
+b = B()
+# Output:
+# A.__init__ called
+# B.__init__ called
+
+b.print_A()  # 1 (inherited method)
+b.print_B()  # 2 (own method)
+print(b.a)   # 1 (inherited attribute)
+print(b.b)   # 2 (own attribute)
+\end{lstlisting}
+
+\textbf{What happens if you forget super()?}
+\begin{lstlisting}[caption={Forgetting to call super()}]
+class B_Wrong(A):
+    def __init__(self):
+        # Forgot super().__init__()!
+        self.b = 2
+
+b = B_Wrong()
+# b.print_A()  # AttributeError: 'B_Wrong' object has no attribute 'a'
+print(b.b)     # 2 (own attribute exists)
+\end{lstlisting}
+
+\subsection{Multiple Inheritance}
+
+Python supports multiple inheritance:
+
+\begin{lstlisting}[caption={Multiple inheritance}]
+class Flyer:
+    """Mixin for flying ability."""
+    
+    def fly(self):
+        return f"{self.name} is flying!"
+
+
+class Swimmer:
+    """Mixin for swimming ability."""
+    
+    def swim(self):
+        return f"{self.name} is swimming!"
+
+
+class Duck(Animal, Flyer, Swimmer):
+    """Duck can fly and swim."""
+    
+    def __init__(self, name, age):
+        super().__init__(name, age)
+    
+    def speak(self):
+        return "Quack!"
+
+# Usage
+duck = Duck("Donald", 5)
+print(duck.speak())  # "Quack!"
+print(duck.fly())    # "Donald is flying!"
+print(duck.swim())   # "Donald is swimming!"
+print(duck.info())   # Inherited from Animal
+\end{lstlisting}
+
+\textbf{Method Resolution Order (MRO):}
+Python uses the C3 linearization algorithm to determine method lookup order:
+
+\begin{lstlisting}[caption={Viewing method resolution order}]
+# View MRO
+print(Duck.__mro__)
+# (<class 'Duck'>, <class 'Animal'>, <class 'Flyer'>, 
+#  <class 'Swimmer'>, <class 'object'>)
+
+# Or use mro() method
+print(Duck.mro())
+\end{lstlisting}
+
+\section{Decorators}
+
+Decorators are a powerful Python feature that allow you to modify the behavior of functions or classes.
+
+\subsection{Understanding Decorators}
+
+A decorator is a function that takes another function as input and returns a modified version of it.
+
+\begin{lstlisting}[caption={Basic decorator example}]
+def my_decorator(func):
+    """A simple decorator."""
+    def wrapper():
+        print("Something before the function")
+        func()
+        print("Something after the function")
+    return wrapper
+
+# Apply decorator manually
+def say_hello():
+    print("Hello!")
+
+say_hello = my_decorator(say_hello)
+say_hello()
+# Output:
+# Something before the function
+# Hello!
+# Something after the function
+
+# Or use @ syntax (preferred)
+@my_decorator
+def say_goodbye():
+    print("Goodbye!")
+
+say_goodbye()
+# Output:
+# Something before the function
+# Goodbye!
+# Something after the function
+\end{lstlisting}
+
+\subsection{Decorators with Arguments}
+
+\begin{lstlisting}[caption={Decorators handling function arguments}]
+def smart_decorator(func):
+    """Decorator that preserves function arguments."""
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} returned {result}")
+        return result
+    return wrapper
+
+@smart_decorator
+def add(a, b):
+    return a + b
+
+result = add(3, 5)
+# Output:
+# Calling add
+# add returned 8
+print(result)  # 8
+\end{lstlisting}
+
+\subsection{Practical Decorator Examples}
+
+\textbf{Timing Decorator:}
+\begin{lstlisting}[caption={Timing function execution}]
+import time
+
+def timer(func):
+    """Measure execution time of function."""
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} took {end - start:.4f} seconds")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    time.sleep(1)
+    return "Done"
+
+result = slow_function()
+# Output: slow_function took 1.0001 seconds
+\end{lstlisting}
+
+\textbf{Memoization Decorator:}
+\begin{lstlisting}[caption={Caching function results}]
+def memoize(func):
+    """Cache function results."""
+    cache = {}
+    def wrapper(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return wrapper
+
+@memoize
+def fibonacci(n):
+    """Compute nth Fibonacci number."""
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# Much faster with memoization
+print(fibonacci(100))  # Completes quickly!
+\end{lstlisting}
+
+\section{Built-In Decorators for Classes}
+
+Python provides several built-in decorators specifically for use in classes.
+
+\subsection{@staticmethod}
+
+Static methods don't receive the instance (\texttt{self}) as the first argument:
+
+\begin{lstlisting}[caption={Using @staticmethod}]
+class MathUtils:
+    """Utility class for math operations."""
+    
+    @staticmethod
+    def add(a, b):
+        """Add two numbers.
+        
+        No access to instance or class.
+        """
+        return a + b
+    
+    @staticmethod
+    def multiply(a, b):
+        """Multiply two numbers."""
+        return a * b
+
+# Call without creating instance
+result = MathUtils.add(5, 3)  # 8
+
+# Can also call on instance (but unusual)
+utils = MathUtils()
+result = utils.multiply(4, 7)  # 28
+\end{lstlisting}
+
+\textbf{Use Cases for @staticmethod:}
+\begin{itemize}
+    \item Utility functions related to the class
+    \item Functions that don't need instance or class data
+    \item Grouping related functions in a namespace
+\end{itemize}
+
+\subsection{@classmethod}
+
+Class methods receive the class (not instance) as first argument:
+
+\begin{lstlisting}[caption={Using @classmethod}]
+class Point:
+    """Point with alternative constructors."""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    @classmethod
+    def from_tuple(cls, coords):
+        """Create point from tuple.
+        
+        Args:
+            coords: Tuple of (x, y)
+        
+        Returns:
+            New Point instance
+        """
+        return cls(coords[0], coords[1])
+    
+    @classmethod
+    def origin(cls):
+        """Create point at origin."""
+        return cls(0, 0)
+    
+    @classmethod
+    def name(cls):
+        """Return class name."""
+        return cls.__name__
+
+# Use alternative constructors
+p1 = Point.from_tuple((3, 4))
+p2 = Point.origin()
+
+print(Point.name())  # "Point"
+\end{lstlisting}
+
+\textbf{Convention:} Use \texttt{cls} as the first parameter name for class methods (analogous to \texttt{self} for instance methods).
+
+\textbf{Use Cases for @classmethod:}
+\begin{itemize}
+    \item Alternative constructors (factory methods)
+    \item Methods that work with class variables
+    \item Methods that need access to the class itself
+\end{itemize}
+
+\subsection{@property}
+
+Properties allow you to define methods that are accessed like attributes:
+
+\begin{lstlisting}[caption={Using @property for computed attributes}]
+class Temperature:
+    """Temperature with Celsius and Fahrenheit conversions."""
+    
+    def __init__(self, celsius):
+        self._celsius = celsius
+    
+    @property
+    def celsius(self):
+        """Get temperature in Celsius."""
+        return self._celsius
+    
+    @celsius.setter
+    def celsius(self, value):
+        """Set temperature in Celsius with validation."""
+        if value < -273.15:
+            raise ValueError("Temperature below absolute zero!")
+        self._celsius = value
+    
+    @property
+    def fahrenheit(self):
+        """Get temperature in Fahrenheit (computed)."""
+        return self._celsius * 9/5 + 32
+    
+    @fahrenheit.setter
+    def fahrenheit(self, value):
+        """Set temperature via Fahrenheit."""
+        self.celsius = (value - 32) * 5/9
+
+# Usage - looks like attribute access
+temp = Temperature(25)
+print(temp.celsius)      # 25 (calls getter)
+print(temp.fahrenheit)   # 77.0 (computed)
+
+temp.celsius = 30        # Calls setter
+print(temp.fahrenheit)   # 86.0
+
+temp.fahrenheit = 32     # Sets via Fahrenheit
+print(temp.celsius)      # 0.0
+
+# temp.celsius = -300  # Raises ValueError
+\end{lstlisting}
+
+\textbf{More Complex Example:}
+\begin{lstlisting}[caption={Property with validation and computation}]
+class Point:
+    """Point with properties."""
+    
+    def __init__(self, x, y):
+        self._x = x
+        self._y = y
+    
+    @property
+    def x(self):
+        """The point's x coordinate."""
+        return self._x
+    
+    @x.setter
+    def x(self, value):
+        """Set x coordinate."""
+        self._x = value
+    
+    @property
+    def y(self):
+        """The point's y coordinate."""
+        return self._y
+    
+    @y.setter
+    def y(self, value):
+        """Set y coordinate."""
+        self._y = value
+    
+    @property
+    def magnitude(self):
+        """Distance from origin (read-only)."""
+        return (self._x**2 + self._y**2)**0.5
+
+p = Point(3, 4)
+print(p.x)          # 3
+print(p.magnitude)  # 5.0
+
+p.x = 5
+print(p.magnitude)  # 6.4031...
+
+# p.magnitude = 10  # AttributeError - no setter defined
+\end{lstlisting}
+
+\textbf{Benefits of @property:}
+\begin{itemize}
+    \item Provides computed attributes
+    \item Adds validation to attribute setting
+    \item Can make read-only attributes
+    \item Allows changing implementation without breaking interface
+    \item Cleaner syntax than getter/setter methods
+\end{itemize}
+
+\section{Modules and Code Organization}
+
+As programs grow, organizing code into modules becomes essential.
+
+\subsection{What is a Module?}
+
+A \textbf{module} is simply a Python file containing definitions (functions, classes, variables). The filename becomes the module name.
+
+\textbf{Example Module (mymath.py):}
+\begin{lstlisting}[caption={A simple module - mymath.py}]
+"""Mathematical utility functions.
+
+This module provides basic mathematical operations.
+"""
+
+PI = 3.14159265359
+
+def square(x):
+    """Return the square of x."""
+    return x ** 2
+
+def cube(x):
+    """Return the cube of x."""
+    return x ** 3
+
+class Circle:
+    """Represent a circle."""
+    
+    def __init__(self, radius):
+        self.radius = radius
+    
+    def area(self):
+        """Calculate area."""
+        return PI * self.radius ** 2
+
+if __name__ == "__main__":
+    # This code only runs if module is executed directly
+    print("Testing mymath module")
+    print(f"square(5) = {square(5)}")
+    print(f"cube(3) = {cube(3)}")
+\end{lstlisting}
+
+\subsection{Importing Modules}
+
+\textbf{Method 1: Import Entire Module}
+\begin{lstlisting}[caption={Importing entire module}]
+import mymath
+
+result = mymath.square(5)
+circle = mymath.Circle(10)
+print(mymath.PI)
+\end{lstlisting}
+
+\textbf{Method 2: Import with Alias}
+\begin{lstlisting}[caption={Importing with alias}]
+import mymath as mm
+
+result = mm.square(5)
+print(mm.PI)
+\end{lstlisting}
+
+\textbf{Method 3: Import Specific Items}
+\begin{lstlisting}[caption={Importing specific items}]
+from mymath import square, Circle
+
+result = square(5)  # Use directly without module name
+circle = Circle(10)
+# print(PI)  # NameError - PI not imported
+\end{lstlisting}
+
+\textbf{Method 4: Import Everything (Not Recommended)}
+\begin{lstlisting}[caption={Importing everything - use with caution}]
+from mymath import *
+
+result = square(5)
+circle = Circle(10)
+print(PI)
+
+# Warning: Can cause name conflicts and makes code less clear
+\end{lstlisting}
+
+\subsection{Module Search Path}
+
+Python searches for modules in this order:
+\begin{enumerate}
+    \item Current directory
+    \item Directories in \texttt{PYTHONPATH} environment variable
+    \item Standard library directories
+    \item Site-packages directories (third-party packages)
+\end{enumerate}
+
+\begin{lstlisting}[caption={Viewing the module search path}]
+import sys
+print(sys.path)
+# ['', '/usr/lib/python3.10', '/usr/lib/python3.10/site-packages', ...]
+\end{lstlisting}
+
+\subsection{Packages}
+
+A \textbf{package} is a directory containing Python modules and a special \texttt{\_\_init\_\_.py} file:
+
+\textbf{Package Structure:}
+\begin{verbatim}
+mypackage/
+    __init__.py
+    module1.py
+    module2.py
+    subpackage/
+        __init__.py
+        module3.py
+\end{verbatim}
+
+\textbf{Importing from Packages:}
+\begin{lstlisting}[caption={Importing from packages}]
+# Import module from package
+import mypackage.module1
+
+# Import specific item from module in package
+from mypackage.module1 import my_function
+
+# Import from subpackage
+from mypackage.subpackage.module3 import MyClass
+\end{lstlisting}
+
+\subsection{The \_\_init\_\_.py File}
+
+The \texttt{\_\_init\_\_.py} file:
+\begin{itemize}
+    \item Marks a directory as a Python package
+    \item Can be empty
+    \item Can contain package initialization code
+    \item Can define \texttt{\_\_all\_\_} to control \texttt{from package import *}
+\end{itemize}
+
+\textbf{Example \_\_init\_\_.py:}
+\begin{lstlisting}[caption={Package initialization file}]
+"""MyPackage - A collection of utilities.
+
+This package provides mathematical and string utilities.
+"""
+
+# Import commonly used items to package level
+from .module1 import important_function
+from .module2 import ImportantClass
+
+# Define what gets imported with 'from mypackage import *'
+__all__ = ['important_function', 'ImportantClass']
+
+# Package version
+__version__ = '1.0.0'
+\end{lstlisting}
+
+\section{Executing Modules as Scripts}
+
+Python modules can be both imported and executed as standalone scripts.
+
+\subsection{The \_\_name\_\_ Variable}
+
+Python sets the \texttt{\_\_name\_\_} variable differently depending on how the file is used:
+
+\begin{itemize}
+    \item When \textbf{executed directly}: \texttt{\_\_name\_\_ == "\_\_main\_\_"}
+    \item When \textbf{imported}: \texttt{\_\_name\_\_ == module\_name}
+\end{itemize}
+
+\begin{lstlisting}[caption={Dual-use module with __name__ check}]
+"""whats_the_point.py - Demonstrate Point class usage."""
+
+import point  # Import our point module
+import sys
+
+def demonstrate_points():
+    """Demonstrate point operations."""
+    p1 = point.Point(1., 2.)
+    p2 = point.Point(0., 7.)
+    p3 = p1 + p2
+    print(f"p1 + p2 = {p3}")
+
+if __name__ == "__main__":
+    # This code only runs when executed directly
+    print("Running whats_the_point.py as script")
+    
+    # Can access command-line arguments
+    if len(sys.argv) > 1:
+        y_coord = int(sys.argv[1])
+        p1 = point.Point(1., y_coord)
+    else:
+        p1 = point.Point(1., 2.)
+    
+    p2 = point.Point(0., 7.)
+    p3 = p1 + p2
+    print(f"Result: {p3}")
+else:
+    # This code runs when imported
+    print("whats_the_point module imported")
+\end{lstlisting}
+
+\textbf{Running as Script:}
+\begin{lstlisting}[language=bash]
+$ python whats_the_point.py
+Running whats_the_point.py as script
+Result: (1.0, 9.0)
+
+$ python whats_the_point.py 5
+Running whats_the_point.py as script
+Result: (1.0, 12.0)
+\end{lstlisting}
+
+\textbf{Importing as Module:}
+\begin{lstlisting}[caption={When imported, main block doesn't run}]
+import whats_the_point
+# Output: whats_the_point module imported
+
+whats_the_point.demonstrate_points()
+# Uses the functions, but __main__ block didn't run
+\end{lstlisting}
+
+\subsection{Command-Line Arguments}
+
+Access command-line arguments via \texttt{sys.argv}:
+
+\begin{lstlisting}[caption={Handling command-line arguments}]
+import sys
+
+def main():
+    """Main program function."""
+    print(f"Script name: {sys.argv[0]}")
+    print(f"Number of arguments: {len(sys.argv) - 1}")
+    
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <name> [age]")
+        sys.exit(1)
+    
+    name = sys.argv[1]
+    age = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    
+    print(f"Hello, {name}!")
+    if age:
+        print(f"You are {age} years old.")
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+\textbf{Better Approach: argparse Module}
+
+For complex command-line interfaces, use the \texttt{argparse} module:
+
+\begin{lstlisting}[caption={Using argparse for command-line arguments}]
+import argparse
+
+def main():
+    """Main program with argument parsing."""
+    parser = argparse.ArgumentParser(
+        description='Process some integers.'
+    )
+    
+    parser.add_argument('name', help='Your name')
+    parser.add_argument('-a', '--age', type=int, help='Your age')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                       help='Verbose output')
+    
+    args = parser.parse_args()
+    
+    print(f"Hello, {args.name}!")
+    if args.age:
+        print(f"You are {args.age} years old.")
+    if args.verbose:
+        print("Verbose mode enabled")
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+\textbf{Usage:}
+\begin{lstlisting}[language=bash]
+$ python script.py Alice --age 30 --verbose
+Hello, Alice!
+You are 30 years old.
+Verbose mode enabled
+
+$ python script.py --help
+usage: script.py [-h] [-a AGE] [-v] name
+...
+\end{lstlisting}
+
+\textbf{Reference:} \url{https://docs.python.org/3/library/argparse.html}
+
+\section{String Formatting}
+
+Python provides multiple methods for formatting strings, with f-strings being the modern recommended approach.
+
+\subsection{F-Strings (Format String Literals)}
+
+\textbf{Introduced in Python 3.6}, f-strings are the most readable and performant method:
+
+\begin{lstlisting}[caption={F-string formatting examples}]
+import math
+
+# Basic usage
+name = "Alice"
+age = 30
+print(f"My name is {name} and I am {age} years old")
+
+# Expressions inside braces
+x = 10
+y = 20
+print(f"{x} + {y} = {x + y}")  # "10 + 20 = 30"
+
+# Format specifications
+pi = math.pi
+print(f"Pi = {pi:.2f}")      # "Pi = 3.14"
+print(f"Pi = {pi:10.4f}")    # "Pi =     3.1416" (10 chars wide)
+
+# Padding with zeros
+number = 42
+print(f"{number:05d}")       # "00042"
+
+# Alignment
+text = "hello"
+print(f"{text:<10}")         # "hello     " (left-aligned)
+print(f"{text:>10}")         # "     hello" (right-aligned)
+print(f"{text:^10}")         # "  hello   " (centered)
+
+# Number formatting
+value = 1234567.89
+print(f"{value:,.2f}")       # "1,234,567.89" (thousands separator)
+print(f"{value:e}")          # "1.234568e+06" (scientific notation)
+
+# Percentage
+fraction = 0.85
+print(f"{fraction:.1%}")     # "85.0%"
+
+# Debug feature (Python 3.8+)
+x = 42
+print(f"{x = }")             # "x = 42"
+print(f"{x = :5.2f}")        # "x = 42.00"
+\end{lstlisting}
+
+\subsection{Format String Method}
+
+The \texttt{.format()} method (Python 2.6+):
+
+\begin{lstlisting}[caption={String format() method}]
+import math
+
+# Positional arguments
+print("{} + {} = {}".format(10, 20, 30))  # "10 + 20 = 30"
+
+# Named arguments
+print("{name} is {age} years old".format(name="Bob", age=25))
+
+# Indexed arguments
+print("{0} {1} {0}".format("hello", "world"))  # "hello world hello"
+
+# Format specifications
+print("{:.2f}".format(math.pi))   # "3.14"
+print("{:05d}".format(42))        # "00042"
+
+# Number formatting
+print("{:,.2f}".format(1234567.89))  # "1,234,567.89"
+\end{lstlisting}
+
+\subsection{Old-Style Formatting (printf-style)}
+
+C-style formatting (legacy, still works):
+
+\begin{lstlisting}[caption={Old-style % formatting}]
+import math
+
+# Basic usage
+print("%s is %d years old" % ("Charlie", 35))
+
+# Format specifications
+print("%3.1f %4.2f" % (math.e, math.pi))  # "2.7 3.14"
+
+# Multiple values
+print("Name: %s, Age: %d, GPA: %.2f" % ("Diana", 20, 3.85))
+
+# Padding
+print("%05d" % 42)  # "00042"
+\end{lstlisting}
+
+\subsection{Format Specification Mini-Language}
+
+\textbf{General Format:} \texttt{\{value:fill align sign width .precision type\}}
+
+\textbf{Components:}
+\begin{itemize}
+    \item \textbf{fill:} Character to use for padding (default: space)
+    \item \textbf{align:} \texttt{<} (left), \texttt{>} (right), \texttt{\^} (center), \texttt{=} (after sign)
+    \item \textbf{sign:} \texttt{+} (always), \texttt{-} (negatives only), \texttt{(space)} (space for positive)
+    \item \textbf{width:} Minimum field width
+    \item \textbf{precision:} Number of decimal places (for floats) or max length (for strings)
+    \item \textbf{type:} \texttt{d} (int), \texttt{f} (float), \texttt{e} (scientific), \texttt{s} (string), etc.
+\end{itemize}
+
+\begin{lstlisting}[caption={Format specification examples}]
+# Different types
+print(f"{42:d}")        # Integer: "42"
+print(f"{42:b}")        # Binary: "101010"
+print(f"{42:x}")        # Hexadecimal: "2a"
+print(f"{42:o}")        # Octal: "52"
+
+# Floating point
+print(f"{3.14159:f}")   # Fixed point: "3.141590"
+print(f"{3.14159:.2f}") # Two decimals: "3.14"
+print(f"{3.14159:e}")   # Scientific: "3.141590e+00"
+
+# Alignment and padding
+print(f"{'test':*<10}") # "test******"
+print(f"{'test':*>10}") # "******test"
+print(f"{'test':*^10}") # "***test***"
+
+# Numbers with signs
+print(f"{42:+d}")       # "+42"
+print(f"{-42:+d}")      # "-42"
+print(f"{42: d}")       # " 42" (space for positive)
+\end{lstlisting}
+
+\textbf{Complete Reference:} 
+\begin{itemize}
+    \item \url{https://docs.python.org/3/tutorial/inputoutput.html#fancier-output-formatting}
+    \item \url{https://docs.python.org/3/library/string.html#formatspec}
+\end{itemize}
+
+\section{File Input/Output}
+
+Working with files is essential for reading data, saving results, and persisting program state.
+
+\subsection{Opening Files}
+
+\textbf{Basic Syntax:}
+\begin{lstlisting}[caption={Opening files with open()}]
+# Open file
+f = open("filename.txt", "r")  # 'r' for read mode
+# ... use file ...
+f.close()  # Always close when done!
+\end{lstlisting}
+
+\textbf{File Modes:}
+\begin{itemize}
+    \item \texttt{'r'}: Read (default) - file must exist
+    \item \texttt{'w'}: Write - creates new file or overwrites existing
+    \item \texttt{'a'}: Append - adds to end of file
+    \item \texttt{'x'}: Exclusive creation - fails if file exists
+    \item \texttt{'r+'}: Read and write
+    \item \texttt{'rb'}: Read binary
+    \item \texttt{'wb'}: Write binary
+    \item \texttt{'ab'}: Append binary
+\end{itemize}
+
+\subsection{Writing to Files}
+
+\begin{lstlisting}[caption={Writing to files}]
+# Write mode (overwrites existing file)
+f = open("output.txt", "w")
+f.write("Hello, World!\n")
+f.write("Second line\n")
+f.close()
+
+# Append mode (adds to existing file)
+f = open("output.txt", "a")
+f.write("Third line\n")
+f.close()
+
+# Writing multiple lines
+lines = ["Line 1\n", "Line 2\n", "Line 3\n"]
+f = open("output.txt", "w")
+f.writelines(lines)
+f.close()
+\end{lstlisting}
+
+\subsection{Reading from Files}
+
+\begin{lstlisting}[caption={Reading from files}]
+# Read entire file
+f = open("input.txt", "r")
+content = f.read()
+f.close()
+print(content)
+
+# Read line by line
+f = open("input.txt", "r")
+for line in f:
+    print(line.strip())  # strip() removes trailing newline
+f.close()
+
+# Read one line
+f = open("input.txt", "r")
+first_line = f.readline()
+second_line = f.readline()
+f.close()
+
+# Read all lines into list
+f = open("input.txt", "r")
+lines = f.readlines()
+f.close()
+print(lines)  # List of strings, each ending with \n
+\end{lstlisting}
+
+\subsection{Context Managers: The with Statement}
+
+\textbf{Best Practice:} Always use the \texttt{with} statement for file operations:
+
+\begin{lstlisting}[caption={Using with statement for file handling}]
+# File automatically closed, even if exception occurs
+with open("data.txt", "r") as f:
+    content = f.read()
+    # Process content
+# File is automatically closed here
+
+# Multiple files
+with open("input.txt", "r") as infile, \
+     open("output.txt", "w") as outfile:
+    for line in infile:
+        outfile.write(line.upper())
+# Both files automatically closed
+
+# Writing
+with open("numbers.txt", "w") as f:
+    for i in range(10):
+        f.write(f"{i}\n")
+\end{lstlisting}
+
+\textbf{Why Use with?}
+\begin{itemize}
+    \item Automatically closes file, even if exception occurs
+    \item Cleaner code (no explicit close needed)
+    \item Prevents resource leaks
+    \item Pythonic and recommended approach
+\end{itemize}
+
+\subsection{Complete File I/O Examples}
+
+\textbf{Reading and Processing CSV:}
+\begin{lstlisting}[caption={Processing CSV files}]
+# Simple CSV processing
+with open("data.csv", "r") as f:
+    for line in f:
+        fields = line.strip().split(",")
+        # Process fields
+        print(fields)
+
+# Better: use csv module
+import csv
+
+with open("data.csv", "r") as f:
+    reader = csv.reader(f)
+    headers = next(reader)  # First row
+    for row in reader:
+        print(dict(zip(headers, row)))
+\end{lstlisting}
+
+\textbf{Reading and Writing JSON:}
+\begin{lstlisting}[caption={JSON file operations}]
+import json
+
+# Write JSON
+data = {
+    "name": "Alice",
+    "age": 30,
+    "scores": [85, 90, 95]
+}
+
+with open("data.json", "w") as f:
+    json.dump(data, f, indent=2)
+
+# Read JSON
+with open("data.json", "r") as f:
+    loaded_data = json.load(f)
+    print(loaded_data["name"])
+\end{lstlisting}
+
+\textbf{Binary Files:}
+\begin{lstlisting}[caption={Binary file operations}]
+# Write binary
+data = b"\x00\x01\x02\x03"
+with open("data.bin", "wb") as f:
+    f.write(data)
+
+# Read binary
+with open("data.bin", "rb") as f:
+    data = f.read()
+    print(data)  # b'\x00\x01\x02\x03'
+\end{lstlisting}
+
+\subsection{File Path Operations}
+
+Use \texttt{pathlib} for modern path handling:
+
+\begin{lstlisting}[caption={Using pathlib for file paths}]
+from pathlib import Path
+
+# Create path object
+path = Path("data") / "files" / "input.txt"
+
+# Check if file exists
+if path.exists():
+    print("File exists")
+
+# Get file information
+print(path.name)        # "input.txt"
+print(path.stem)        # "input"
+print(path.suffix)      # ".txt"
+print(path.parent)      # Path("data/files")
+
+# Read/write with pathlib
+content = path.read_text()
+path.write_text("New content")
+
+# Iterate over directory
+data_dir = Path("data")
+for file in data_dir.glob("*.txt"):
+    print(file)
+\end{lstlisting}
+
+\section{Exception Handling}
+
+Exceptions provide a mechanism for handling errors gracefully rather than crashing the program.
+
+\subsection{Understanding Exceptions}
+
+\textbf{The Concept:}
+\begin{enumerate}
+    \item Function encounters error or exceptional condition
+    \item Cannot handle it locally
+    \item \textbf{Raises} (throws) an exception
+    \item Calling code can \textbf{catch} (except) the exception
+    \item If not caught, program terminates with traceback
+\end{enumerate}
+
+\subsection{Basic Exception Handling}
+
+\begin{lstlisting}[caption={Basic try-except structure}]
+try:
+    # Code that might raise exception
+    result = 10 / 0
+except ZeroDivisionError:
+    # Handle specific exception
+    print("Cannot divide by zero!")
+    result = None
+
+print(f"Result: {result}")
+\end{lstlisting}
+
+\subsection{Catching Multiple Exceptions}
+
+\begin{lstlisting}[caption={Handling multiple exception types}]
+def safe_divide(a, b):
+    """Divide a by b with error handling."""
+    try:
+        result = a / b
+        return result
+    except ZeroDivisionError:
+        print("Error: Division by zero")
+        return None
+    except TypeError:
+        print("Error: Invalid types for division")
+        return None
+
+# Test
+print(safe_divide(10, 2))      # 5.0
+print(safe_divide(10, 0))      # Error message, returns None
+print(safe_divide(10, "2"))    # Error message, returns None
+
+# Multiple exceptions in one except clause
+def process_value(x):
+    try:
+        return int(x) * 2
+    except (ValueError, TypeError):
+        print("Error: Cannot convert to integer")
+        return None
+\end{lstlisting}
+
+\subsection{Complete Exception Handling Structure}
+
+\begin{lstlisting}[caption={Full try-except-else-finally structure}]
+def read_number_from_file(filename):
+    """Read number from file with complete error handling."""
+    result = None
+    
+    try:
+        # Code that might raise exception
+        with open(filename, "r") as f:
+            content = f.read().strip()
+            result = int(content)
+    
+    except FileNotFoundError:
+        # Specific exception
+        print(f"File {filename} not found")
+    
+    except ValueError:
+        # Another specific exception
+        print("File doesn't contain a valid number")
+    
+    except Exception as e:
+        # Catch any other exception
+        print(f"Unexpected error: {e}")
+    
+    else:
+        # Executes if NO exception occurred
+        print("Successfully read number")
+    
+    finally:
+        # ALWAYS executes (cleanup code)
+        print("Finished processing file")
+    
+    return result
+
+# Test
+number = read_number_from_file("data.txt")
+\end{lstlisting}
+
+\textbf{Execution Flow:}
+\begin{itemize}
+    \item \texttt{try}: Code that might raise exception
+    \item \texttt{except}: Handles specific exception types
+    \item \texttt{else}: Runs only if NO exception occurred
+    \item \texttt{finally}: ALWAYS runs (for cleanup), even if exception occurs
+\end{itemize}
+
+\subsection{Accessing Exception Information}
+
+\begin{lstlisting}[caption={Getting exception details}]
+try:
+    x = int("not a number")
+except ValueError as e:
+    # Access exception object
+    print(f"Error occurred: {e}")
+    print(f"Exception type: {type(e).__name__}")
+
+# Getting full traceback
+import traceback
+
+try:
+    result = 1 / 0
+except ZeroDivisionError:
+    # Print full traceback
+    traceback.print_exc()
+\end{lstlisting}
+
+\subsection{Raising Exceptions}
+
+Functions can raise exceptions:
+
+\begin{lstlisting}[caption={Raising exceptions}]
+def validate_age(age):
+    """Validate age is positive."""
+    if age < 0:
+        raise ValueError("Age cannot be negative")
+    if age > 150:
+        raise ValueError("Age is unrealistically high")
+    return True
+
+try:
+    validate_age(-5)
+except ValueError as e:
+    print(f"Validation error: {e}")
+
+# Re-raising exceptions
+def process_file(filename):
+    """Process file with logging."""
+    try:
+        with open(filename) as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Logging: {filename} not found")
+        raise  # Re-raise the same exception
+\end{lstlisting}
+
+\subsection{Common Built-In Exceptions}
+
+\begin{itemize}
+    \item \texttt{Exception}: Base class for all exceptions
+    \item \texttt{ValueError}: Invalid value (e.g., \texttt{int("abc")})
+    \item \texttt{TypeError}: Wrong type (e.g., \texttt{"text" + 5})
+    \item \texttt{KeyError}: Dictionary key not found
+    \item \texttt{IndexError}: List index out of range
+    \item \texttt{FileNotFoundError}: File doesn't exist
+    \item \texttt{ZeroDivisionError}: Division by zero
+    \item \texttt{AttributeError}: Attribute doesn't exist
+    \item \texttt{ImportError}: Module not found
+    \item \texttt{RuntimeError}: Generic runtime error
+\end{itemize}
+
+\subsection{Custom Exceptions}
+
+\begin{lstlisting}[caption={Creating custom exception classes}]
+class InsufficientFundsError(Exception):
+    """Raised when withdrawal exceeds balance."""
+    pass
+
+class BankAccount:
+    """Bank account with custom exceptions."""
+    
+    def __init__(self, balance=0):
+        self.balance = balance
+    
+    def withdraw(self, amount):
+        """Withdraw money, raise exception if insufficient funds."""
+        if amount > self.balance:
+            raise InsufficientFundsError(
+                f"Cannot withdraw {amount}, balance is {self.balance}"
+            )
+        self.balance -= amount
+
+# Usage
+account = BankAccount(100)
+
+try:
+    account.withdraw(150)
+except InsufficientFundsError as e:
+    print(f"Transaction failed: {e}")
+\end{lstlisting}
+
+\textbf{Complete Reference:} \url{https://docs.python.org/3/library/exceptions.html}
+
+\section{Python Conventions and Best Practices}
+
+Following Python conventions ensures code is readable, maintainable, and Pythonic.
+
+\subsection{Naming Conventions}
+
+\textbf{Variables and Functions:}
+\begin{lstlisting}[caption={Variable and function naming}]
+# Variables: lowercase with underscores
+user_name = "Alice"
+total_count = 42
+max_value = 100
+
+# Functions: lowercase with underscores
+def calculate_average(numbers):
+    return sum(numbers) / len(numbers)
+
+def get_user_input():
+    return input("Enter value: ")
+\end{lstlisting}
+
+\textbf{Constants:}
+\begin{lstlisting}[caption={Constant naming}]
+# Constants: UPPERCASE with underscores
+PI = 3.14159265359
+MAX_CONNECTIONS = 100
+DEFAULT_TIMEOUT = 30
+\end{lstlisting}
+
+\textbf{Classes:}
+\begin{lstlisting}[caption={Class naming}]
+# Classes: CapitalizedWords (PascalCase)
+class BankAccount:
+    pass
+
+class UserProfile:
+    pass
+
+class HTTPConnection:
+    pass
+\end{lstlisting}
+
+\textbf{Private/Internal:}
+\begin{lstlisting}[caption={Private naming convention}]
+class MyClass:
+    def __init__(self):
+        self._internal = "semi-private"    # Single underscore
+        self.__private = "name mangled"     # Double underscore
+    
+    def _internal_method(self):
+        """Internal method, not part of public API."""
+        pass
+\end{lstlisting}
+
+\subsection{Important Naming Conventions}
+
+\textbf{Standard Parameter Names:}
+\begin{itemize}
+    \item \texttt{self}: First parameter of instance methods
+    \item \texttt{cls}: First parameter of class methods
+    \item \texttt{args}: Variable positional arguments
+    \item \texttt{kwargs}: Variable keyword arguments
+\end{itemize}
+
+\begin{lstlisting}[caption={Standard parameter naming}]
+class Example:
+    def instance_method(self, value):
+        """self refers to instance."""
+        pass
+    
+    @classmethod
+    def class_method(cls, value):
+        """cls refers to class."""
+        pass
+    
+    def flexible_method(self, *args, **kwargs):
+        """Accept variable arguments."""
+        pass
+\end{lstlisting}
+
+\subsection{The Zen of Python}
+
+Python's design philosophy, accessible via \texttt{import this}:
+
+\begin{lstlisting}[caption={The Zen of Python}]
+import this
+# Output:
+# Beautiful is better than ugly.
+# Explicit is better than implicit.
+# Simple is better than complex.
+# Complex is better than complicated.
+# Flat is better than nested.
+# Sparse is better than dense.
+# Readability counts.
+# Special cases aren't special enough to break the rules.
+# Although practicality beats purity.
+# Errors should never pass silently.
+# Unless explicitly silenced.
+# In the face of ambiguity, refuse the temptation to guess.
+# There should be one-- and preferably only one --obvious way to do it.
+# Although that way may not be obvious at first unless you're Dutch.
+# Now is better than never.
+# Although never is often better than *right* now.
+# If the implementation is hard to explain, it's a bad idea.
+# If the implementation is easy to explain, it may be a good idea.
+# Namespaces are one honking great idea -- let's do more of those!
+\end{lstlisting}
+
+\subsection{PEP 8 Checklist}
+
+\textbf{Critical Rules:}
+\begin{enumerate}
+    \item Use 4 spaces per indentation level
+    \item NEVER use tabs
+    \item Maximum line length: 79 characters
+    \item Use blank lines to separate functions and classes
+    \item Use docstrings for all public modules, functions, classes, methods
+    \item Use spaces around operators and after commas
+    \item Name classes with CapitalizedWords
+    \item Name functions and variables with lowercase\_with\_underscores
+    \item Always use \texttt{self} for first method argument
+    \item Always use \texttt{cls} for first class method argument
+    \item Use UTF-8 encoding (default in Python 3)
+\end{enumerate}
+
+\subsection{Docstring Conventions - PEP 257}
+
+\textbf{PEP 257:} \url{https://www.python.org/dev/peps/pep-0257/}
+
+\begin{lstlisting}[caption={Proper docstring formatting}]
+def complex_function(arg1, arg2, option=None):
+    """Do something complex with arguments.
+    
+    This is a more detailed explanation of what the function does.
+    It can span multiple paragraphs if needed.
+    
+    Args:
+        arg1 (int): First argument description
+        arg2 (str): Second argument description
+        option (bool, optional): Optional parameter. Defaults to None.
+    
+    Returns:
+        dict: Description of return value
+    
+    Raises:
+        ValueError: If arg1 is negative
+        TypeError: If arg2 is not a string
+    
+    Examples:
+        >>> complex_function(5, "test")
+        {'result': 'processed'}
+    """
+    if arg1 < 0:
+        raise ValueError("arg1 must be non-negative")
+    # Implementation...
+\end{lstlisting}
+
+\subsection{Style Checking with pylint}
+
+\textbf{pylint} is a comprehensive code quality checker:
+
+\begin{lstlisting}[language=bash, caption={Using pylint}]
+# Install
+pip install pylint
+
+# Check a file
+pylint myfile.py
+
+# Output includes:
+# - Code style violations
+# - Potential errors
+# - Code smell detection
+# - Complexity metrics
+# - Overall score
+
+# Generate config file
+pylint --generate-rcfile > .pylintrc
+
+# Disable specific warnings
+# pylint: disable=line-too-long
+\end{lstlisting}
+
+\subsection{Complementary Style Guides}
+
+Beyond PEP 8, organizations maintain their own guides:
+
+\textbf{Google Python Style Guide:}
+\begin{itemize}
+    \item \url{https://google.github.io/styleguide/pyguide.html}
+    \item Used across Google projects
+    \item Extends PEP 8 with additional conventions
+\end{itemize}
+
+\textbf{NumPy Style Guide:}
+\begin{itemize}
+    \item \url{https://numpydoc.readthedocs.io/}
+    \item Docstring conventions for scientific computing
+    \item Used by NumPy, SciPy, and many scientific packages
+\end{itemize}
+
+\section{Additional Resources and Further Learning}
+
+Python has extensive documentation and community resources for continued learning.
+
+\subsection{Official Python Documentation}
+
+\textbf{Python Homepage:}
+\begin{itemize}
+    \item \url{https://www.python.org/}
+    \item Downloads, news, community information
+\end{itemize}
+
+\textbf{Python Tutorial:}
+\begin{itemize}
+    \item \url{https://docs.python.org/3/tutorial/index.html}
+    \item Official beginner's guide
+    \item Many examples in this document come from this tutorial
+    \item Comprehensive introduction to Python concepts
+\end{itemize}
+
+\textbf{Python Library Reference:}
+\begin{itemize}
+    \item \url{https://docs.python.org/3/library/index.html}
+    \item Complete documentation for standard library
+    \item Essential reference for built-in modules
+    \item Includes usage examples
+\end{itemize}
+
+\textbf{Python Language Reference:}
+\begin{itemize}
+    \item \url{https://docs.python.org/3/reference/index.html}
+    \item Detailed language specification
+    \item Explains how Python works internally
+    \item For advanced users wanting deep understanding
+\end{itemize}
+
+\subsection{Third-Party Packages}
+
+\textbf{Python Package Index (PyPI):}
+\begin{itemize}
+    \item \url{https://pypi.org/}
+    \item Over 500,000 packages
+    \item Searchable repository
+    \item Installation via pip
+\end{itemize}
+
+\textbf{Key Scientific Packages:}
+\begin{itemize}
+    \item NumPy: \url{https://numpy.org/doc/}
+    \item SciPy: \url{https://docs.scipy.org/}
+    \item Matplotlib: \url{https://matplotlib.org/}
+    \item pandas: \url{https://pandas.pydata.org/docs/}
+    \item scikit-learn: \url{https://scikit-learn.org/}
+\end{itemize}
+
+\subsection{Recommended Learning Path}
+
+\textbf{For Beginners:}
+\begin{enumerate}
+    \item Start with official Python tutorial
+    \item Practice with simple programs
+    \item Learn one module at a time from standard library
+    \item Read and understand others' code
+    \item Contribute to open source projects
+\end{enumerate}
+
+\textbf{For Scientific Computing:}
+\begin{enumerate}
+    \item Master Python fundamentals
+    \item Learn NumPy thoroughly
+    \item Explore SciPy for specific needs
+    \item Master Matplotlib for visualization
+    \item Learn pandas for data analysis
+    \item Explore domain-specific packages
+\end{enumerate}
+
+\subsection{Community Resources}
+
+\textbf{Online Communities:}
+\begin{itemize}
+    \item Stack Overflow: \url{https://stackoverflow.com/questions/tagged/python}
+    \item Reddit: \url{https://www.reddit.com/r/Python/}
+    \item Python Discord servers
+    \item Local Python user groups
+\end{itemize}
+
+\textbf{Learning Platforms:}
+\begin{itemize}
+    \item Real Python: \url{https://realpython.com/}
+    \item Python Tutor (visualizes code execution): \url{https://pythontutor.com/}
+    \item Codecademy, Coursera, edX courses
+\end{itemize}
+
+\textbf{Books:}
+\begin{itemize}
+    \item "Python Crash Course" by Eric Matthes
+    \item "Fluent Python" by Luciano Ramalho
+    \item "Effective Python" by Brett Slatkin
+    \item "Python Cookbook" by David Beazley
+\end{itemize}
+
+\section{Summary and Conclusion}
+
+This comprehensive guide has covered the fundamental concepts of Python programming, from basic syntax to advanced object-oriented programming features.
+
+\subsection{Key Concepts Covered}
+
+\textbf{Language Fundamentals:}
+\begin{itemize}
+    \item Interpreted execution model
+    \item Dynamic typing system
+    \item Python 2 vs Python 3
+    \item Installation across platforms
+\end{itemize}
+
+\textbf{Basic Syntax:}
+\begin{itemize}
+    \item Data types: integers, floats, strings, booleans, complex numbers
+    \item Operators and expressions
+    \item Comments and documentation
+    \item Indentation-based structure
+\end{itemize}
+
+\textbf{Data Structures:}
+\begin{itemize}
+    \item Lists: mutable sequences
+    \item Tuples: immutable sequences
+    \item Dictionaries: key-value mappings
+    \item Sets: unordered unique collections
+    \item List and dictionary comprehensions
+\end{itemize}
+
+\textbf{Control Flow:}
+\begin{itemize}
+    \item Conditional statements (if-elif-else)
+    \item Loops (while, for)
+    \item Loop control (break, continue)
+    \item Chained comparisons
+\end{itemize}
+
+\textbf{Functions:}
+\begin{itemize}
+    \item Function definition and calling
+    \item Parameters: positional, keyword, default, variable-length
+    \item Return values
+    \item Lambda functions
+    \item First-class functions
+\end{itemize}
+
+\textbf{Object-Oriented Programming:}
+\begin{itemize}
+    \item Class definition and instantiation
+    \item Instance and class variables
+    \item Methods and properties
+    \item Inheritance and super()
+    \item Magic methods
+    \item Decorators
+\end{itemize}
+
+\textbf{Advanced Topics:}
+\begin{itemize}
+    \item Pass by assignment
+    \item Mutability vs immutability
+    \item Shallow and deep copying
+    \item Module system
+    \item Exception handling
+    \item File I/O
+    \item String formatting
+\end{itemize}
+
+\textbf{Best Practices:}
+\begin{itemize}
+    \item PEP 8 style guide
+    \item Docstring conventions
+    \item Code organization
+    \item Use of tools (formatters, linters)
+\end{itemize}
+
+\subsection{Python's Philosophy}
+
+Python emphasizes:
+\begin{itemize}
+    \item \textbf{Readability:} Code should be easy to read and understand
+    \item \textbf{Simplicity:} Simple solutions are preferred over complex ones
+    \item \textbf{Explicitness:} Explicit is better than implicit
+    \item \textbf{Practicality:} Pragmatism over purity
+    \item \textbf{Community:} Strong emphasis on conventions and consistency
+\end{itemize}
+
+\subsection{Next Steps}
+
+To continue your Python journey:
+
+\begin{enumerate}
+    \item \textbf{Practice regularly:} Write code every day
+    \item \textbf{Read others' code:} Learn from open source projects
+    \item \textbf{Build projects:} Apply concepts to real problems
+    \item \textbf{Contribute:} Join open source communities
+    \item \textbf{Specialize:} Dive deep into areas of interest (web, data science, ML, etc.)
+    \item \textbf{Stay updated:} Follow Python Enhancement Proposals (PEPs)
+    \item \textbf{Use the documentation:} Make the official docs your primary reference
+\end{enumerate}
+
+\subsection{Final Thoughts}
+
+Python is a powerful, versatile language that has become indispensable in scientific computing, data analysis, web development, automation, and many other domains. Its clear syntax, extensive libraries, and supportive community make it an excellent choice for both beginners and experienced programmers.
+
+The key to mastering Python is consistent practice and engagement with the community. Start with small programs, gradually tackle more complex projects, and don't hesitate to consult the excellent documentation and community resources available.
+
+Remember: Python's strength lies not just in its syntax, but in its philosophy of writing clear, readable code that others (including your future self) can understand and maintain. Follow the conventions, embrace the Zen of Python, and you'll find yourself writing not just functional code, but truly Pythonic code.
+
+Happy coding!
+
+\end{document}
