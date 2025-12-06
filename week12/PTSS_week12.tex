@@ -15,6 +15,9 @@
 \usepackage{palatino} % Use a more "textbook-like" font
 \usepackage{mathpazo} % Use Palatino-compatible math fonts
 \usepackage{microtype} % Improves text justification and reduces overfull boxes
+\usepackage{tikz}
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep, topsep=0pt}
 
 % Define colors for code listings
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -47,6 +50,7 @@
 
 % Allow line breaks in inline \texttt{} commands at underscores and other characters
 \usepackage{xspace}
+\usetikzlibrary{shapes,arrows,positioning,shadows,fit,decorations.pathreplacing,backgrounds}
 
 % Improve hyphenation and line breaking - balanced settings
 \tolerance=2000
@@ -112,9 +116,46 @@ A \textbf{compiled language} like C++ follows a multi-stage process before code 
 
 \textbf{Analogy:} Think of compiled languages like translating an entire book from English into Japanese before anyone reads it. Once translated, Japanese readers can read the book directly without needing the English original or a translator present.
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.7\textwidth]{placeholder_compiled_language_workflow.png}
+% \caption{The compilation workflow for C++: source code passes through preprocessor, compiler, and linker stages to produce a binary executable that is then run to generate results.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.7\textwidth]{placeholder_compiled_language_workflow.png}
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={rectangle, draw, fill=blue!20, text width=3cm, text centered, rounded corners, minimum height=1cm, drop shadow},
+    arrow/.style={->, >=stealth, thick}
+]
+    % Nodes
+    \node[box] (source) {Source Code\\{\small\texttt{program.cpp}}};
+    \node[box, below of=source] (preproc) {Preprocessor};
+    \node[box, below of=preproc] (compiler) {Compiler};
+    \node[box, below of=compiler] (linker) {Linker};
+    \node[box, fill=green!20, below of=linker] (binary) {Binary Executable\\{\small\texttt{program.exe}}};
+    \node[box, fill=yellow!20, below of=binary] (execute) {Execute};
+    \node[box, fill=orange!20, below of=execute] (results) {Results};
+    
+    % Arrows
+    \draw[arrow] (source) -- (preproc);
+    \draw[arrow] (preproc) -- (compiler);
+    \draw[arrow] (compiler) -- (linker);
+    \draw[arrow] (linker) -- (binary);
+    \draw[arrow] (binary) -- (execute);
+    \draw[arrow] (execute) -- (results);
+    
+    % Side label
+    \node[left=2cm of compiler, text width=2.5cm] {Compilation\\Phase\\(One Time)};
+    \node[left=2cm of execute, text width=2.5cm] {Execution\\Phase};
+    
+    % Brackets
+    \draw[decorate, decoration={brace, amplitude=10pt, mirror}] 
+        (-2.5,0.5) -- (-2.5,-4.5) node[midway, left=12pt, text width=2cm] {};
+    \draw[decorate, decoration={brace, amplitude=10pt, mirror}] 
+        (-2.5,-5.5) -- (-2.5,-7.5) node[midway, left=12pt, text width=2cm] {};
+\end{tikzpicture}
 \caption{The compilation workflow for C++: source code passes through preprocessor, compiler, and linker stages to produce a binary executable that is then run to generate results.}
 \end{figure}
 
@@ -144,9 +185,38 @@ An \textbf{interpreted language} like Python follows a different approach:
 
 \textbf{Analogy:} Think of interpreted languages like having a simultaneous translator at a conference. As the English speaker talks, the translator immediately translates each sentence into Japanese. There's no pre-translated document; translation happens in real-time during execution.
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.7\textwidth]{placeholder_interpreted_language_workflow.png}
+% \caption{The interpretation workflow for Python: source code is directly processed by the interpreter, which executes it immediately to produce results, without an intermediate binary compilation stage.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.7\textwidth]{placeholder_interpreted_language_workflow.png}
+\begin{tikzpicture}[
+    node distance=1.0cm,
+    box/.style={rectangle, draw, fill=blue!20, text width=3cm, text centered, rounded corners, minimum height=1cm, drop shadow},
+    arrow/.style={->, >=stealth, thick}
+]
+    % Nodes
+    \node[box] (source) {Source Code\\{\small\texttt{script.py}}};
+    \node[box, fill=purple!20, below=of source, minimum height=2cm] (interpreter) {Python\\Interpreter\\{\small(reads \& executes)}};
+    \node[box, fill=orange!20, below=of interpreter] (results) {Results};
+    
+    % Arrows
+    \draw[arrow] (source) -- (interpreter);
+    \draw[arrow] (interpreter) -- (results);
+    
+    % Side annotations
+    \node[right=1cm of interpreter, text width=3.5cm, align=left] {
+        \textbullet~No compilation\\
+        \textbullet~Direct execution\\
+        \textbullet~Line by line
+    };
+    
+    % Title
+    \node[above=0.5cm of source, font=\bfseries] {Interpreted Language Workflow};
+\end{tikzpicture}
 \caption{The interpretation workflow for Python: source code is directly processed by the interpreter, which executes it immediately to produce results, without an intermediate binary compilation stage.}
 \end{figure}
 
@@ -921,6 +991,61 @@ pip install ipython
 \includegraphics[width=0.9\textwidth]{placeholder_jupyter_notebook_interface.png}
 \caption{The Jupyter Notebook interface showing code cells, output, and markdown text combined in a single document. The browser-based interface allows for interactive computing with immediate visual feedback.}
 \end{figure}
+
+% \begin{figure}[h!]
+% \centering
+% \begin{tikzpicture}[
+%     node distance=0.2cm,
+%     cell/.style={rectangle, draw, thick, minimum width=10cm, align=left, font=\ttfamily\small, inner sep=5pt},
+%     code/.style={cell, fill=blue!5},
+%     output/.style={cell, fill=green!5},
+%     markdown/.style={cell, fill=yellow!5, font=\sffamily\small}
+% ]
+%     % Content Nodes
+%     \node[markdown] (md1) {
+%         \textbf{Data Analysis Example}\\
+%         This notebook demonstrates basic data analysis.
+%     };
+    
+%     \node[code, below=of md1] (code1) {
+%         In [1]: \textcolor{blue}{import} numpy \textcolor{blue}{as} np\\
+%         \phantom{In [1]:} \textcolor{blue}{import} matplotlib.pyplot \textcolor{blue}{as} plt
+%     };
+    
+%     \node[code, below=of code1] (code2) {
+%         In [2]: data = np.random.randn(100)\\
+%         \phantom{In [2]:} plt.hist(data)\\
+%         \phantom{In [2]:} plt.show()
+%     };
+    
+%     \node[output, below=0.05cm of code2] (out2) {
+%         Out[2]: \textcolor{gray}{[plot displayed below]}\\
+%         \phantom{Out[2]:} \tikz{\draw[fill=blue!20] (0,0) rectangle (3,1); \draw[thick] (0.2,0.2) -- (0.5,0.6) -- (1,0.8) -- (1.5,0.5) -- (2,0.3);}
+%     };
+    
+%     \node[markdown, below=of out2] (md2) {
+%         \textbf{Results:} The histogram shows a normal distribution.
+%     };
+
+%     % Browser Chrome
+%     \begin{scope}[on background layer]
+%         % White content area
+%         \node[draw, fill=white, fit=(md1) (md2), inner sep=10pt] (content) {};
+        
+%         % Toolbar (positioned relative to content)
+%         \node[draw, fill=gray!10, minimum width=10.5cm, minimum height=0.8cm, above=0cm of content.north, anchor=south] (toolbar) {};
+%         \node[anchor=west] at ([xshift=0.2cm]toolbar.west) {\tiny$\blacktriangleright$ Run \hspace{1em} $\blacksquare$ Stop \hspace{1em} + Code};
+        
+%         % Address bar (positioned relative to toolbar)
+%         \node[draw, fill=gray!30, minimum width=10.5cm, minimum height=0.8cm, above=0cm of toolbar.north, anchor=south, rounded corners=5pt] (address) {};
+%         \node[anchor=west, font=\footnotesize\ttfamily] at ([xshift=0.2cm]address.west) {localhost:8888/notebooks/example.ipynb};
+        
+%         % Main window frame
+%         \node[draw, fill=gray!30, rounded corners, fit=(address) (toolbar) (content), inner sep=5pt] (browser) {};
+%     \end{scope}
+% \end{tikzpicture}
+% \caption{The Jupyter Notebook interface showing code cells, output, and markdown text combined in a single document. The browser-based interface allows for interactive computing with immediate visual feedback.}
+% \end{figure}
 
 \textbf{Starting Jupyter:}
 \begin{lstlisting}[language=bash, caption={Launching Jupyter Notebook or JupyterLab}]
@@ -1739,9 +1864,53 @@ slice10 = x[1:6:2]  # [1, 'three', 5] (from 1 to 5, step 2)
 
 \textbf{Key Insight:} The stop index is always exclusive. Think of slice indices as pointing between elements:
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.8\textwidth]{placeholder_list_indexing_diagram.png}
+% \caption{Visualization of list indexing: indices point between elements. For a list [0, 1, 2, 3], index positions are at 0, 1, 2, 3, 4, with the slice [1:3] capturing elements between positions 1 and 3 (elements 1 and 2).}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.8\textwidth]{placeholder_list_indexing_diagram.png}
+\begin{tikzpicture}[
+    scale=1.2,
+    cell/.style={rectangle, draw, thick, minimum width=1.2cm, minimum height=1cm, fill=blue!10, font=\large\ttfamily},
+    index/.style={font=\small\ttfamily, text=blue},
+    negindex/.style={font=\small\ttfamily, text=red}
+]
+    % List elements
+    \foreach \x/\val in {0/0, 1/1, 2/2, 3/3} {
+        \node[cell] (cell\x) at (\x*1.5, 0) {\val};
+    }
+    
+    % Positive indices (between elements)
+    % Positions: -0.75, 0.75, 2.25, 3.75, 5.25
+    \foreach \x/\idx in {0/0, 1/1, 2/2, 3/3, 4/4} {
+        \draw[thick, blue] (\x*1.5-0.75, 0.6) -- (\x*1.5-0.75, 1.0);
+        \node[index, above] at (\x*1.5-0.75, 1.0) {\idx};
+    }
+    
+    % Negative indices
+    \foreach \x/\idx in {1/-4, 2/-3, 3/-2, 4/-1} {
+        \draw[thick, red] (\x*1.5-0.75, -0.6) -- (\x*1.5-0.75, -1.0);
+        \node[negindex, below] at (\x*1.5-0.75, -1.0) {\idx};
+    }
+    
+    % Slice example: [1:3]
+    \draw[very thick, green!60!black, <->] (0.75, 1.5) -- (3.75, 1.5);
+    \node[above, green!60!black, font=\small\ttfamily] at (2.25, 1.5) {[1:3] = [1, 2]};
+    
+    % Labels
+    \node[above=1.8cm of cell1, font=\small, text=blue] {Positive indices (0-based)};
+    \node[below=1.5cm of cell1, font=\small, text=red] {Negative indices (from end)};
+    
+    % Explanation box
+    \node[draw, fill=yellow!10, text width=5cm, below=2.0cm of cell3, font=\footnotesize, align=left, anchor=north] {
+        \textbf{Key:} Indices point \emph{between} elements\\
+        \texttt{lst[1:3]} captures elements from\\
+        index 1 up to (not including) index 3
+    };
+\end{tikzpicture}
 \caption{Visualization of list indexing: indices point between elements. For a list [0, 1, 2, 3], index positions are at 0, 1, 2, 3, 4, with the slice [1:3] capturing elements between positions 1 and 3 (elements 1 and 2).}
 \end{figure}
 
@@ -3447,9 +3616,52 @@ Python uses a unique approach called \textbf{"pass by assignment"} or \textbf{"c
     \end{itemize}
 \end{enumerate}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.9\textwidth]{placeholder_python_object_model_diagram.png}
+% \caption{Python's object model: Variables are labels (names) that bind to objects in memory. The same object can have multiple names referring to it. When you write x = 5, you're creating a label 'x' that points to an integer object 5 in memory.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.9\textwidth]{placeholder_python_object_model_diagram.png}
+\begin{tikzpicture}[
+    varname/.style={rectangle, draw, fill=yellow!20, minimum width=1.5cm, minimum height=0.8cm, font=\ttfamily},
+    memoryobj/.style={circle, draw, fill=blue!20, minimum size=1.2cm, font=\Large\ttfamily, drop shadow},
+    scopecontainer/.style={rectangle, draw, dashed, thick, inner sep=10pt},
+    arrow/.style={->, >=stealth, thick, blue}
+]
+    % Names (left side)
+    \node[varname] (x) at (0,0) {\texttt{x}};
+    \node[varname, below=0.5cm of x] (y) {\texttt{y}};
+    \node[varname, below=0.5cm of y] (z) {\texttt{z}};
+    \node[scopecontainer, fit=(x) (y) (z), label=above:\textbf{Names (Variables)}] (names) {};
+    
+    % Objects (right side)
+    \node[memoryobj] (obj5) at (6,0) {\texttt{5}};
+    \node[memoryobj, below=1cm of obj5] (objHello) {\small\texttt{"Hi"}};
+    \node[memoryobj, below=1cm of objHello] (objList) {\small\texttt{[~]}};
+    \node[memoryobj, right=1cm of obj5] (obj10) {\texttt{10}};
+    \node[scopecontainer, fit=(obj5) (objHello) (objList) (obj10), label=above:\textbf{Object Space (Memory)}] (objects) {};
+    
+    % Arrows (bindings)
+    \draw[arrow] (x.east) -- (obj5.west) node[midway, above, font=\tiny] {refers to};
+    \draw[arrow] (y.east) -- (obj5.west);
+    \draw[arrow] (z.east) -- (objHello.west);
+    
+    % Annotation
+    \node[below=0.5cm of objects, text width=4cm, font=\footnotesize, align=center] {
+        Multiple names can refer\\to the same object
+    };
+    
+    % Title
+    \node[above=1.5cm of names, font=\bfseries\large] {Python's Object Model};
+    
+    % Example code
+    \node[above=0.3cm of names, font=\ttfamily\small, align=left] {
+        x = 5\\
+        y = x
+    };
+\end{tikzpicture}
 \caption{Python's object model: Variables are labels (names) that bind to objects in memory. The same object can have multiple names referring to it. When you write x = 5, you're creating a label 'x' that points to an integer object 5 in memory.}
 \end{figure}
 
@@ -3460,9 +3672,41 @@ Python uses a unique approach called \textbf{"pass by assignment"} or \textbf{"c
 x = 0
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step1.png}
+% \caption{Global scope contains name 'x' pointing to integer object 0 in object space.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step1.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2.5cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    memoryobj/.style={circle, draw, thick, fill=green!20, minimum size=1cm, font=\Large},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xname) at (0,0) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xname), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Object space
+    \node[memoryobj] (obj0) at (6,0) {0};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(obj0), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrow
+    \draw[arrow] (xname.east) -- (obj0.west) node[midway, above, font=\small] {binds to};
+    
+    % Code annotation
+    \node[below=1.2cm of global.south, font=\ttfamily, fill=gray!10, draw] {x = 0};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Initial Assignment};
+\end{tikzpicture}
 \caption{Global scope contains name 'x' pointing to integer object 0 in object space.}
 \end{figure}
 
@@ -3471,9 +3715,53 @@ x = 0
 incr(x)  # Call the function
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step2.png}
+% \caption{Local scope created with parameter 'x' pointing to the same integer object 0. Both global and local 'x' refer to the same object.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step2.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    memoryobj/.style={circle, draw, thick, fill=green!20, minimum size=1cm, font=\Large},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope
+    \node[varname] (xlocal) at (0,-2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, label=above:{\textbf{Local Scope (incr)}}] (local) {};
+    \end{scope}
+    
+    % Object space
+    \node[memoryobj] (obj0) at (6,0) {0};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(obj0), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrows
+    \draw[arrow] (xglobal.east) -- (obj0.west) node[midway, above, sloped, font=\tiny] {refers to};
+    \draw[arrow] (xlocal.east) -- (obj0.west) node[midway, below, sloped, font=\tiny] {refers to};
+    
+    % Annotation
+    \node[right=0.2cm of objspace.east, text width=2.5cm, font=\footnotesize, align=left] {
+        Both names\\point to\\same object
+    };
+    
+    % Code annotation
+    \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {incr(x)};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
+\end{tikzpicture}
 \caption{Local scope created with parameter 'x' pointing to the same integer object 0. Both global and local 'x' refer to the same object.}
 \end{figure}
 
@@ -3485,9 +3773,59 @@ def incr(x):
 
 Because integers are IMMUTABLE, this creates a NEW object:
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step3.png}
+% \caption{Integer 0 cannot be modified. Python creates new integer object 1, and local 'x' now points to it. Global 'x' still points to 0.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step3.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    memoryobj/.style={circle, draw, thick, fill=green!20, minimum size=1cm, font=\Large},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,2.5) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope
+    \node[varname] (xlocal) at (0,-2.5) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, label=above:{\textbf{Local Scope (incr)}}] (local) {};
+    \end{scope}
+    
+    % Object space with two objects
+    \node[memoryobj] (obj0) at (6,2.5) {0};
+    \node[memoryobj, fill=yellow!40] (obj1) at (6,-2.5) {1};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(obj0) (obj1), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrows
+    \draw[arrow] (xglobal.east) -- (obj0.west);
+    \draw[arrow, very thick] (xlocal.east) -- (obj1.west);
+    
+    % Annotation for new object
+    \node[right=0.2cm of objspace.east, text width=2.5cm, font=\footnotesize, align=left, text=red] {
+        \textbf{New object}\\created (int\\is immutable)
+    };
+    
+    % Operation annotation
+    \node[left=0.5cm of local.west, text width=2cm, font=\footnotesize, align=right] {
+        \texttt{x += 1}\\creates\\new object
+    };
+    
+    % Code annotation
+    \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {x += 1 \# inside incr()};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Increment (Creates New Object)};
+\end{tikzpicture}
 \caption{Integer 0 cannot be modified. Python creates new integer object 1, and local 'x' now points to it. Global 'x' still points to 0.}
 \end{figure}
 
@@ -3496,9 +3834,54 @@ Because integers are IMMUTABLE, this creates a NEW object:
 print(x)  # Back in global scope
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step4.png}
+% \caption{Local scope destroyed. Global 'x' still points to 0 (unchanged). The integer object 1 has no references and will be garbage collected.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_step4.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    memoryobj/.style={circle, draw, thick, fill=green!20, minimum size=1cm, font=\Large},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,0.5) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope (destroyed)
+    \node[varname, opacity=0.3] (xlocal) at (0,-3) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, opacity=0.3, dashed, label={[opacity=0.3]above:{\textbf{Local Scope (destroyed)}}}] (local) {};
+    \end{scope}
+    
+    % Object space
+    \node[memoryobj] (obj0) at (6,0.5) {0};
+    \node[memoryobj, fill=gray!20, opacity=0.4] (obj1) at (6,-3) {1};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(obj0) (obj1), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrow
+    \draw[arrow] (xglobal.east) -- (obj0.west);
+    
+    % Garbage collection annotation
+    \node[right=0.2cm of objspace.east, text width=2.5cm, font=\footnotesize, align=left, text=gray] {
+        No references\\
+        $\rightarrow$ Garbage\\collected
+    };
+    
+    % Result annotation
+    \node[below=1.2cm of global.south, font=\ttfamily, fill=green!10, draw, thick] {print(x) \# outputs: 0};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Unchanged!)};
+\end{tikzpicture}
 \caption{Local scope destroyed. Global 'x' still points to 0 (unchanged). The integer object 1 has no references and will be garbage collected.}
 \end{figure}
 
@@ -3511,9 +3894,46 @@ print(x)  # Back in global scope
 x = [0, 1, 2]
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step1.png}
+% \caption{Global 'x' points to a list object containing three elements.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step1.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    listbox/.style={rectangle, draw, thick, fill=green!20, minimum width=3cm, minimum height=1cm},
+    cell/.style={rectangle, draw, minimum width=0.8cm, minimum height=0.6cm, fill=white},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xname) at (0,0) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xname), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Object space with list
+    \node[cell] (cell0) at (6,-0.3) {\texttt{0}};
+    \node[cell, right=0cm of cell0] (cell1) {\texttt{1}};
+    \node[cell, right=0cm of cell1] (cell2) {\texttt{2}};
+    \node[listbox, fit=(cell0) (cell1) (cell2), inner sep=2pt] (listobj) {};
+    \node[above=0.1cm of listobj, font=\small] {list object};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(listobj), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrow
+    \draw[arrow] (xname.east) -- (listobj.west);
+    
+    % Code annotation
+    \node[below=1.2cm of global.south, font=\ttfamily, fill=gray!10, draw] {x = [0, 1, 2]};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Create List};
+\end{tikzpicture}
 \caption{Global 'x' points to a list object containing three elements.}
 \end{figure}
 
@@ -3522,9 +3942,57 @@ x = [0, 1, 2]
 incr_first(x)
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step2.png}
+% \caption{Local 'x' created, pointing to the SAME list object as global 'x'.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step2.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    listbox/.style={rectangle, draw, thick, fill=green!20, minimum width=3cm, minimum height=1cm},
+    cell/.style={rectangle, draw, minimum width=0.8cm, minimum height=0.6cm, fill=white},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope
+    \node[varname] (xlocal) at (0,-2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, label=above:{\textbf{Local Scope}}] (local) {};
+    \end{scope}
+    
+    % Object space with list (shared)
+    \node[cell] (cell0) at (6,-0.3) {\texttt{0}};
+    \node[cell, right=0cm of cell0] (cell1) {\texttt{1}};
+    \node[cell, right=0cm of cell1] (cell2) {\texttt{2}};
+    \node[listbox, fit=(cell0) (cell1) (cell2), inner sep=2pt] (listobj) {};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(listobj), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrows
+    \draw[arrow] (xglobal.east) -- (listobj.west);
+    \draw[arrow] (xlocal.east) -- (listobj.west);
+    
+    % Annotation
+    \node[right=0.2cm of objspace.east, text width=2.5cm, font=\footnotesize, align=left, text=blue] {
+        \textbf{SAME}\\list object!\\(both names\\refer to it)
+    };
+    
+    % Code annotation
+    \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {incr\_first(x)};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
+\end{tikzpicture}
 \caption{Local 'x' created, pointing to the SAME list object as global 'x'.}
 \end{figure}
 
@@ -3536,9 +4004,60 @@ def incr_first(x):
 
 Because lists are MUTABLE, this modifies the existing object:
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step3.png}
+% \caption{The list object itself is modified in-place. The first element changes from 0 to 1. Both local and global 'x' point to this same modified list.}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step3.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    listbox/.style={rectangle, draw, thick, fill=green!20, minimum width=3cm, minimum height=1cm},
+    cell/.style={rectangle, draw, minimum width=0.8cm, minimum height=0.6cm, fill=white},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope
+    \node[varname] (xlocal) at (0,-2) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, label=above:{\textbf{Local Scope}}] (local) {};
+    \end{scope}
+    
+    % Modified list object
+    \node[cell, fill=yellow!50] (cell0) at (6,-0.3) {\texttt{1}};
+    \node[cell, right=0cm of cell0] (cell1) {\texttt{1}};
+    \node[cell, right=0cm of cell1] (cell2) {\texttt{2}};
+    \node[listbox, fit=(cell0) (cell1) (cell2), inner sep=2pt] (listobj) {};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(listobj), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Change indicator
+    \draw[->, very thick, blue] (cell0.north) -- ++(0,0.5) node[above, font=\tiny] {0→1};
+    
+    % Arrows
+    \draw[arrow] (xglobal.east) -- (listobj.west);
+    \draw[arrow] (xlocal.east) -- (listobj.west);
+    
+    % Annotation
+    \node[right=0.2cm of objspace.east, text width=3cm, font=\footnotesize, align=left, text=red] {
+        \textbf{Modified}\\in-place!\\(list is mutable)
+    };
+    
+    % Code annotation
+    \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {x[0] += 1};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Modify List In-Place};
+\end{tikzpicture}
 \caption{The list object itself is modified in-place. The first element changes from 0 to 1. Both local and global 'x' point to this same modified list.}
 \end{figure}
 
@@ -3547,9 +4066,56 @@ Because lists are MUTABLE, this modifies the existing object:
 print(x)  # Back in global scope
 \end{lstlisting}
 
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step4.png}
+% \caption{Local scope destroyed. Global 'x' points to the list, which was modified. Changes are visible!}
+% \end{figure}
+
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.6\textwidth]{placeholder_pass_by_assignment_list_step4.png}
+\begin{tikzpicture}[
+    scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
+    varname/.style={font=\ttfamily, fill=yellow!30, draw, rounded corners, inner sep=2pt},
+    listbox/.style={rectangle, draw, thick, fill=green!20, minimum width=3cm, minimum height=1cm},
+    cell/.style={rectangle, draw, minimum width=0.8cm, minimum height=0.6cm, fill=white},
+    arrow/.style={->, >=stealth, thick, red}
+]
+    % Global scope
+    \node[varname] (xglobal) at (0,0) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xglobal), label=above:{\textbf{Global Scope}}] (global) {};
+    \end{scope}
+    
+    % Local scope (destroyed)
+    \node[varname, opacity=0.3] (xlocal) at (0,-3) {x};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(xlocal), fill=orange!5, opacity=0.3, dashed, label={[opacity=0.3]above:{\textbf{Local Scope (destroyed)}}}] (local) {};
+    \end{scope}
+    
+    % Modified list object (persists)
+    \node[cell, fill=yellow!50] (cell0) at (6,-0.3) {\texttt{1}};
+    \node[cell, right=0cm of cell0] (cell1) {\texttt{1}};
+    \node[cell, right=0cm of cell1] (cell2) {\texttt{2}};
+    \node[listbox, fit=(cell0) (cell1) (cell2), inner sep=2pt] (listobj) {};
+    \begin{scope}[on background layer]
+        \node[scopecontainer, fit=(listobj), label=above:{\textbf{Object Space}}] (objspace) {};
+    \end{scope}
+    
+    % Arrow
+    \draw[arrow] (xglobal.east) -- (listobj.west);
+    
+    % Annotation
+    \node[right=0.2cm of objspace.east, text width=2.5cm, font=\footnotesize, align=left, text=green!50!black] {
+        \textbf{Changes}\\visible!\\List was\\modified
+    };
+    
+    % Result annotation
+    \node[below=1.2cm of global.south, font=\ttfamily, fill=green!10, draw, thick] {print(x) \# [1, 1, 2]};
+    
+    % Step label
+    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Changed!)};
+\end{tikzpicture}
 \caption{Local scope destroyed. Global 'x' points to the list, which was modified. Changes are visible!}
 \end{figure}
 
@@ -5397,7 +5963,7 @@ print("{:,.2f}".format(1234567.89))  # "1,234,567.89"
 
 C-style formatting (legacy, still works):
 
-\begin{lstlisting}[caption={Old-style % formatting}]
+\begin{lstlisting}[caption={Old-style \% formatting}]
 import math
 
 # Basic usage
@@ -6262,3 +6828,9 @@ Remember: Python's strength lies not just in its syntax, but in its philosophy o
 Happy coding!
 
 \end{document}
+
+
+
+
+
+
