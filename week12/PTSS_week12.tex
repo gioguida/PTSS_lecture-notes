@@ -17,6 +17,9 @@
 \usepackage{microtype} % Improves text justification and reduces overfull boxes
 \usepackage{tikz}
 \usepackage{enumitem}
+\usepackage{float}
+\setlength{\parindent}{0pt}
+% \setlength{\parskip}{1em}
 \setlist[itemize]{noitemsep, topsep=0pt}
 
 % Define colors for code listings
@@ -3678,7 +3681,7 @@ x = 0
 % \caption{Global scope contains name 'x' pointing to integer object 0 in object space.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2.5cm, fill=blue!5},
@@ -3705,7 +3708,7 @@ x = 0
     \node[below=1.2cm of global.south, font=\ttfamily, fill=gray!10, draw] {x = 0};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Initial Assignment};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Initial Assignment};
 \end{tikzpicture}
 \caption{Global scope contains name 'x' pointing to integer object 0 in object space.}
 \end{figure}
@@ -3721,7 +3724,7 @@ incr(x)  # Call the function
 % \caption{Local scope created with parameter 'x' pointing to the same integer object 0. Both global and local 'x' refer to the same object.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -3760,7 +3763,7 @@ incr(x)  # Call the function
     \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {incr(x)};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
 \end{tikzpicture}
 \caption{Local scope created with parameter 'x' pointing to the same integer object 0. Both global and local 'x' refer to the same object.}
 \end{figure}
@@ -3779,7 +3782,7 @@ Because integers are IMMUTABLE, this creates a NEW object:
 % \caption{Integer 0 cannot be modified. Python creates new integer object 1, and local 'x' now points to it. Global 'x' still points to 0.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -3824,7 +3827,7 @@ Because integers are IMMUTABLE, this creates a NEW object:
     \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {x += 1 \# inside incr()};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Increment (Creates New Object)};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Increment (Creates New Object)};
 \end{tikzpicture}
 \caption{Integer 0 cannot be modified. Python creates new integer object 1, and local 'x' now points to it. Global 'x' still points to 0.}
 \end{figure}
@@ -3840,7 +3843,7 @@ print(x)  # Back in global scope
 % \caption{Local scope destroyed. Global 'x' still points to 0 (unchanged). The integer object 1 has no references and will be garbage collected.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -3880,7 +3883,7 @@ print(x)  # Back in global scope
     \node[below=1.2cm of global.south, font=\ttfamily, fill=green!10, draw, thick] {print(x) \# outputs: 0};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Unchanged!)};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Unchanged!)};
 \end{tikzpicture}
 \caption{Local scope destroyed. Global 'x' still points to 0 (unchanged). The integer object 1 has no references and will be garbage collected.}
 \end{figure}
@@ -3900,7 +3903,7 @@ x = [0, 1, 2]
 % \caption{Global 'x' points to a list object containing three elements.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -3932,7 +3935,7 @@ x = [0, 1, 2]
     \node[below=1.2cm of global.south, font=\ttfamily, fill=gray!10, draw] {x = [0, 1, 2]};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Create List};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 1: Create List};
 \end{tikzpicture}
 \caption{Global 'x' points to a list object containing three elements.}
 \end{figure}
@@ -3948,7 +3951,7 @@ incr_first(x)
 % \caption{Local 'x' created, pointing to the SAME list object as global 'x'.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -3991,7 +3994,7 @@ incr_first(x)
     \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {incr\_first(x)};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 2: Function Called};
 \end{tikzpicture}
 \caption{Local 'x' created, pointing to the SAME list object as global 'x'.}
 \end{figure}
@@ -4010,7 +4013,7 @@ Because lists are MUTABLE, this modifies the existing object:
 % \caption{The list object itself is modified in-place. The first element changes from 0 to 1. Both local and global 'x' point to this same modified list.}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -4056,7 +4059,7 @@ Because lists are MUTABLE, this modifies the existing object:
     \node[below=1.2cm of local.south, font=\ttfamily, fill=gray!10, draw] {x[0] += 1};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Modify List In-Place};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 3: Modify List In-Place};
 \end{tikzpicture}
 \caption{The list object itself is modified in-place. The first element changes from 0 to 1. Both local and global 'x' point to this same modified list.}
 \end{figure}
@@ -4072,7 +4075,7 @@ print(x)  # Back in global scope
 % \caption{Local scope destroyed. Global 'x' points to the list, which was modified. Changes are visible!}
 % \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     scopecontainer/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, fill=blue!5},
@@ -4114,7 +4117,7 @@ print(x)  # Back in global scope
     \node[below=1.2cm of global.south, font=\ttfamily, fill=green!10, draw, thick] {print(x) \# [1, 1, 2]};
     
     % Step label
-    \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Changed!)};
+    % \node[above=1.2cm of global.north, font=\bfseries\Large, text=purple] {Step 4: Function Returns (x Changed!)};
 \end{tikzpicture}
 \caption{Local scope destroyed. Global 'x' points to the list, which was modified. Changes are visible!}
 \end{figure}
